@@ -119,3 +119,7 @@ work_dirs/
 *.pth
 *.py~
 *.sh~
+
+# model and data
+/data
+/checkpoints
