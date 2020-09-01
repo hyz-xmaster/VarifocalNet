@@ -32,7 +32,6 @@ def reduce_sum(tensor):
 @HEADS.register_module()
 class VFNetHead(AnchorFreeHead):
     """`VarifoclaNet (VFNet): An IoU-aware Dense Object Detector.
-
     <https://arxiv.org/abs/2008.13367>`_.
 
     The VFNet predicts IoU-aware classification scores which mix the
