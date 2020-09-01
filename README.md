@@ -32,9 +32,9 @@ In this work, we propose to learn IoU-aware classification scores (**IACS**) tha
 
 - If you run into problems with `pycocotools`, please install it by:
 
-```
-pip install "git+https://github.com/open-mmlab/cocoapi.git#subdirectory=pycocotools"
-```
+  ```
+  pip install "git+https://github.com/open-mmlab/cocoapi.git#subdirectory=pycocotools"
+  ```
 
 ## A Quick Demo
 Once the installation is done, you can follow the steps below to run a quick demo.
