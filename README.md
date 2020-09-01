@@ -4,7 +4,7 @@ This project hosts the code for implementing the VarifocalNet, as presented in o
 
 ```
 @article{zhang2020varifocalnet,
-  title={VarifocalNet: An IoU-aware Dense Object detector},
+  title={VarifocalNet: An IoU-aware Dense Object Detector},
   author={Zhang, Haoyang and Wang, Ying and Dayoub, Feras and S{\"u}nderhauf, Niko},
   journal={arXiv preprint arXiv:2008.13367},
   year={2020}
@@ -13,7 +13,7 @@ This project hosts the code for implementing the VarifocalNet, as presented in o
 The full paper is available at: [https://arxiv.org/abs/2008.13367](https://arxiv.org/abs/2008.13367).
 
 ## Introduction
-In this work, we propose to learn IoU-aware classification scores (**IACS**) that simultaneously represent the object presence confidence and localization accuracy, to produce a more accurate rank of detections in dense object detectors. In particular, we design a new loss function, named **Varifocal Loss**, for training a dense object detector to predict the IACS, and a new efficient star-shaped bounding box feature representation for estimating the IACS and refining coarse bounding boxes. Combining these two new components and a bounding box refinement branch, we build a new dense object detector on the FCOS architecture, what we call **VarifocalNet** or **VFNet** for short. Extensive experiments on MS COCO benchmark show that our VFNet consistently surpasses the strong baseline by ~2.0 AP with different backbones and our best model with Res2Net-101-DCN reaches a single-model single-scale AP of **51.3** on COCO `test-dev`, achieving the state-of-the-art among various object detectors.
+In this work, we propose to learn IoU-aware classification scores (**IACS**) that simultaneously represent the object presence confidence and localization accuracy, to produce a more accurate rank of detections in dense object detectors. In particular, we design a new loss function, named **Varifocal Loss (VFL)**, for training a dense object detector to predict the IACS, and a new efficient star-shaped bounding box feature representation (the features at nine yellow sampling points) for estimating the IACS and refining coarse bounding boxes. Combining these two new components and a bounding box refinement branch, we build a new dense object detector on the FCOS architecture, what we call **VarifocalNet** or **VFNet** for short. Extensive experiments on MS COCO benchmark show that our VFNet consistently surpasses the strong baseline by ~2.0 AP with different backbones and our best model with Res2Net-101-DCN reaches a single-model single-scale AP of **51.3** on COCO `test-dev`, achieving the state-of-the-art among various object detectors.
 
 
 <div align="center">
@@ -131,10 +131,10 @@ Any pull requests or issues are welcome.
 
 
 ## Citation
-Please consider citing our paper in your publications if the project helps your research. BibTeX reference is as follows.
+Please consider citing our paper in your publications if the project helps your research. BibTeX reference is as follows:
 ```
 @article{zhang2020varifocalnet,
-  title={VarifocalNet: An IoU-aware Dense Object detector},
+  title={VarifocalNet: An IoU-aware Dense Object Detector},
   author={Zhang, Haoyang and Wang, Ying and Dayoub, Feras and S{\"u}nderhauf, Niko},
   journal={arXiv preprint arXiv:2008.13367},
   year={2020}
