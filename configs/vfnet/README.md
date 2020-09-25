@@ -40,8 +40,7 @@
 
 **Notes:**
 - The MS-train scale range is 1333x[480:960] (`range` mode) and the inference scale keeps 1333x800.
-- The R2-101 backbone is [Res2Net-101](https://github.com/Res2Net/mmdetection). If you use it with DCN in inference, please comment [`delattr(self, 'conv2')`](https://github.com/hyz-xmaster/VarifocalNet/blob/master/mmdet/models/backbones/res2net.py#L101) in res2net.py.
-- DCN means using `DCNv2` in both backbone and head.
+- The R2-101 backbone is [Res2Net-101](https://github.com/Res2Net/mmdetection).
 - The inference speed is tested with a Nvidia V100 GPU on HPC ([log file](https://drive.google.com/file/d/1dc9296G6JevouLixj-g81VgccEt54ceP/view?usp=sharing)).
 
 
