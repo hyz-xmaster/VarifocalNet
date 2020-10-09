@@ -29,7 +29,9 @@ def parse_args():
 basic_arch_root = [
     'cascade_rcnn', 'double_heads', 'fcos', 'foveabox', 'free_anchor',
     'grid_rcnn', 'guided_anchoring', 'htc', 'libra_rcnn', 'atss', 'mask_rcnn',
-    'ms_rcnn', 'nas_fpn', 'reppoints', 'retinanet', 'ssd', 'gn', 'ghm', 'fsaf'
+    'ms_rcnn', 'nas_fpn', 'reppoints', 'retinanet', 'ssd', 'gn', 'ghm', 'fsaf',
+    'point_rend', 'nas_fcos', 'pisa', 'dynamic_rcnn', 'gfl', 'sabl', 'paa',
+    'yolo'
 ]
 
 datasets_root = ['wider_face', 'pascal_voc', 'cityscapes', 'mask_rcnn']
@@ -40,13 +42,18 @@ data_pipeline_root = [
 
 nn_module_root = [
     'carafe', 'dcn', 'empirical_attention', 'gcnet', 'gn+ws', 'hrnet', 'pafpn',
-    'nas_fpn'
+    'nas_fpn', 'regnet'
 ]
 
 benchmark_pool = [
     'configs/cityscapes/mask_rcnn_r50_fpn_1x_cityscapes.py',
     'configs/htc/htc_r50_fpn_1x_coco.py',
-    'ghm/retinanet_ghm_r50_fpn_1x_coco.py',
+    'configs/nas_fcos/nas_fcos_nashead_r50_caffe_fpn_gn-head_4x4_1x_coco.py',
+    'configs/point_rend/point_rend_r50_caffe_fpn_mstrain_1x_coco.py',
+    'configs/pisa/pisa_mask_rcnn_r50_fpn_1x_coco.py',
+    'configs/dynamic_rcnn/dynamic_rcnn_r50_fpn_1x.py',
+    'configs/ghm/retinanet_ghm_r50_fpn_1x_coco.py',
+    'configs/regnet/mask_rcnn_regnetx-3GF_fpn_1x_coco.py',
     'configs/carafe/mask_rcnn_r50_fpn_carafe_1x_coco.py',
     'configs/grid_rcnn/grid_rcnn_r50_fpn_gn-head_2x_coco.py',
     'configs/albu_example/mask_rcnn_r50_fpn_albu_1x_coco.py',
@@ -84,7 +91,11 @@ benchmark_pool = [
     'configs/pascal_voc/ssd300_voc0712.py',
     'configs/nas_fpn/retinanet_r50_nasfpn_crop640_50e_coco.py',
     'configs/mask_rcnn/mask_rcnn_r50_caffe_fpn_mstrain-poly_1x_coco.py',
-    'configs/gn+ws/mask_rcnn_r50_fpn_gn_ws-all_2x_coco.py'
+    'configs/gn+ws/mask_rcnn_r50_fpn_gn_ws-all_2x_coco.py',
+    'configs/gfl/gfl_r50_fpn_1x_coco.py',
+    'configs/paa/paa_r50_fpn_1x_coco.py',
+    'configs/sabl/sabl_retinanet_r50_fpn_1x_coco.py',
+    'configs/yolo/yolov3_d53_320_273e_coco.py'
 ]
 
 

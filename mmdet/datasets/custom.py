@@ -1,4 +1,5 @@
 import os.path as osp
+import warnings
 
 import mmcv
 import numpy as np
@@ -24,7 +25,7 @@ class CustomDataset(Dataset):
                 'width': 1280,
                 'height': 720,
                 'ann': {
-                    'bboxes': <np.ndarray> (n, 4),
+                    'bboxes': <np.ndarray> (n, 4) in (x1, y1, x2, y2) order.
                     'labels': <np.ndarray> (n, ),
                     'bboxes_ignore': <np.ndarray> (k, 4), (optional field)
                     'labels_ignore': <np.ndarray> (k, 4) (optional field)
@@ -32,6 +33,19 @@ class CustomDataset(Dataset):
             },
             ...
         ]
+
+    Args:
+        ann_file (str): Annotation file path.
+        pipeline (list[dict]): Processing pipeline.
+        classes (str | Sequence[str], optional): Specify classes to load.
+            If is None, ``cls.CLASSES`` will be used. Default: None.
+        data_root (str, optional): Data root for ``ann_file``,
+            ``img_prefix``, ``seg_prefix``, ``proposal_file`` if specified.
+        test_mode (bool, optional): If set True, annotation will not be loaded.
+        filter_empty_gt (bool, optional): If set true, images without bounding
+            boxes of the dataset's classes will be filtered out. This option
+            only works when `test_mode=False`, i.e., we never filter images
+            during tests.
     """
 
     CLASSES = None
@@ -69,42 +83,62 @@ class CustomDataset(Dataset):
                                               self.proposal_file)
         # load annotations (and proposals)
         self.data_infos = self.load_annotations(self.ann_file)
-        # filter data infos if classes are customized
-        if self.custom_classes:
-            self.data_infos = self.get_subset_by_classes()
 
         if self.proposal_file is not None:
             self.proposals = self.load_proposals(self.proposal_file)
         else:
             self.proposals = None
-        # filter images too small
+
+        # filter images too small and containing no annotations
         if not test_mode:
             valid_inds = self._filter_imgs()
             self.data_infos = [self.data_infos[i] for i in valid_inds]
             if self.proposals is not None:
                 self.proposals = [self.proposals[i] for i in valid_inds]
-        # set group flag for the sampler
-        if not self.test_mode:
+            # set group flag for the sampler
             self._set_group_flag()
+
         # processing pipeline
         self.pipeline = Compose(pipeline)
 
     def __len__(self):
+        """Total number of samples of data."""
         return len(self.data_infos)
 
     def load_annotations(self, ann_file):
+        """Load annotation from annotation file."""
         return mmcv.load(ann_file)
 
     def load_proposals(self, proposal_file):
+        """Load proposal from proposal file."""
         return mmcv.load(proposal_file)
 
     def get_ann_info(self, idx):
+        """Get annotation by index.
+
+        Args:
+            idx (int): Index of data.
+
+        Returns:
+            dict: Annotation info of specified index.
+        """
+
         return self.data_infos[idx]['ann']
 
     def get_cat_ids(self, idx):
+        """Get category ids by index.
+
+        Args:
+            idx (int): Index of data.
+
+        Returns:
+            list[int]: All categories in the image of specified index.
+        """
+
         return self.data_infos[idx]['ann']['labels'].astype(np.int).tolist()
 
     def pre_pipeline(self, results):
+        """Prepare results dict for pipeline."""
         results['img_prefix'] = self.img_prefix
         results['seg_prefix'] = self.seg_prefix
         results['proposal_file'] = self.proposal_file
@@ -114,6 +148,9 @@ class CustomDataset(Dataset):
 
     def _filter_imgs(self, min_size=32):
         """Filter images too small."""
+        if self.filter_empty_gt:
+            warnings.warn(
+                'CustomDataset does not support filtering empty gt images.')
         valid_inds = []
         for i, img_info in enumerate(self.data_infos):
             if min(img_info['width'], img_info['height']) >= min_size:
@@ -133,10 +170,21 @@ class CustomDataset(Dataset):
                 self.flag[i] = 1
 
     def _rand_another(self, idx):
+        """Get another random index from the same group as the given index."""
         pool = np.where(self.flag == self.flag[idx])[0]
         return np.random.choice(pool)
 
     def __getitem__(self, idx):
+        """Get training/test data after pipeline.
+
+        Args:
+            idx (int): Index of data.
+
+        Returns:
+            dict: Training/test data (with annotation if `test_mode` is set \
+                True).
+        """
+
         if self.test_mode:
             return self.prepare_test_img(idx)
         while True:
@@ -147,6 +195,16 @@ class CustomDataset(Dataset):
             return data
 
     def prepare_train_img(self, idx):
+        """Get training data and annotations after pipeline.
+
+        Args:
+            idx (int): Index of data.
+
+        Returns:
+            dict: Training data and annotation after pipeline with new keys \
+                introduced by pipeline.
+        """
+
         img_info = self.data_infos[idx]
         ann_info = self.get_ann_info(idx)
         results = dict(img_info=img_info, ann_info=ann_info)
@@ -156,6 +214,16 @@ class CustomDataset(Dataset):
         return self.pipeline(results)
 
     def prepare_test_img(self, idx):
+        """Get testing data  after pipeline.
+
+        Args:
+            idx (int): Index of data.
+
+        Returns:
+            dict: Testing data after pipeline with new keys intorduced by \
+                piepline.
+        """
+
         img_info = self.data_infos[idx]
         results = dict(img_info=img_info)
         if self.proposals is not None:
@@ -165,7 +233,7 @@ class CustomDataset(Dataset):
 
     @classmethod
     def get_classes(cls, classes=None):
-        """Get class names of current dataset
+        """Get class names of current dataset.
 
         Args:
             classes (Sequence[str] | str | None): If classes is None, use
@@ -174,12 +242,12 @@ class CustomDataset(Dataset):
                 classes where each line contains one class name. If classes is
                 a tuple or list, override the CLASSES defined by the dataset.
 
+        Returns:
+            tuple[str] or list[str]: Names of categories of the dataset.
         """
         if classes is None:
-            cls.custom_classes = False
             return cls.CLASSES
 
-        cls.custom_classes = True
         if isinstance(classes, str):
             # take it as a file path
             class_names = mmcv.list_from_file(classes)
@@ -190,10 +258,8 @@ class CustomDataset(Dataset):
 
         return class_names
 
-    def get_subset_by_classes(self):
-        return self.data_infos
-
     def format_results(self, results, **kwargs):
+        """Place holder to format result to dataset specific output."""
         pass
 
     def evaluate(self,
@@ -219,6 +285,7 @@ class CustomDataset(Dataset):
             scale_ranges (list[tuple] | None): Scale ranges for evaluating mAP.
                 Default: None.
         """
+
         if not isinstance(metric, str):
             assert len(metric) == 1
             metric = metric[0]

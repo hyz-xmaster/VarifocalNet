@@ -1,74 +1,5 @@
 # Tutorial 4: Adding New Modules
 
-## Customize optimizer
-
-An example of customized optimizer `CopyOfSGD` is defined in `mmdet/core/optimizer/copy_of_sgd.py`.
-More generally, a customized optimizer could be defined as following.
-
-Assume you want to add a optimizer named as `MyOptimizer`, which has arguments `a`, `b`, and `c`.
-You need to first implement the new optimizer in a file, e.g., in `mmdet/core/optimizer/my_optimizer.py`:
-
-```python
-from .registry import OPTIMIZERS
-from torch.optim import Optimizer
-
-
-@OPTIMIZERS.register_module
-class MyOptimizer(Optimizer):
-
-    def __init__(self, a, b, c)
-
-```
-
-Then add this module in `mmdet/core/optimizer/__init__.py` thus the registry will
-find the new module and add it:
-
-```python
-from .my_optimizer import MyOptimizer
-```
-
-Then you can use `MyOptimizer` in `optimizer` field of config files.
-In the configs, the optimizers are defined by the field `optimizer` like the following:
-```python
-optimizer = dict(type='SGD', lr=0.02, momentum=0.9, weight_decay=0.0001)
-```
-To use your own optimizer, the field can be changed as
-```python
-optimizer = dict(type='MyOptimizer', a=a_value, b=b_value, c=c_value)
-```
-
-We already support to use all the optimizers implemented by PyTorch, and the only modification is to change the `optimizer` field of config files.
-For example, if you want to use `ADAM`, though the performance will drop a lot, the modification could be as the following.
-```python
-optimizer = dict(type='Adam', lr=0.0003, weight_decay=0.0001)
-```
-The users can directly set arguments following the [API doc](https://pytorch.org/docs/stable/optim.html?highlight=optim#module-torch.optim) of PyTorch.
-
-## Customize optimizer constructor
-
-Some models may have some parameter-specific settings for optimization, e.g. weight decay for BatchNoarm layers.
-The users can do those fine-grained parameter tuning through customizing optimizer constructor.
-
-```
-from mmcv.utils import build_from_cfg
-
-from mmdet.core.optimizer import OPTIMIZER_BUILDERS, OPTIMIZERS
-from mmdet.utils import get_root_logger
-from .cocktail_optimizer import CocktailOptimizer
-
-
-@OPTIMIZER_BUILDERS.register_module
-class CocktailOptimizerConstructor(object):
-
-    def __init__(self, optimizer_cfg, paramwise_cfg=None):
-
-    def __call__(self, model):
-
-        return my_optimizer
-
-```
-
-
 ## Develop new components
 
 We basically categorize model components into 4 types.
@@ -82,7 +13,9 @@ We basically categorize model components into 4 types.
 
 Here we show how to develop new components with an example of MobileNet.
 
-1. Create a new file `mmdet/models/backbones/mobilenet.py`.
+#### 1. Define a new backbone (e.g. MobileNet)
+
+Create a new file `mmdet/models/backbones/mobilenet.py`.
 
 ```python
 import torch.nn as nn
@@ -90,7 +23,7 @@ import torch.nn as nn
 from ..registry import BACKBONES
 
 
-@BACKBONES.register_module
+@BACKBONES.register_module()
 class MobileNet(nn.Module):
 
     def __init__(self, arg1, arg2):
@@ -103,13 +36,22 @@ class MobileNet(nn.Module):
         pass
 ```
 
-2. Import the module in `mmdet/models/backbones/__init__.py`.
+#### 2. Import the module.
 
+You can either add the following line to `mmdet/models/backbones/__init__.py`
 ```python
 from .mobilenet import MobileNet
 ```
 
-3. Use it in your config file.
+or alternatively add
+```python
+custom_imports = dict(
+    imports=['mmdet.models.backbones.mobilenet'],
+    allow_failed_imports=False)
+```
+to the config file to avoid modifying the original code.
+
+#### 3. Use the backbone in your config file.
 
 ```python
 model = dict(
@@ -123,45 +65,56 @@ model = dict(
 
 ### Add new necks
 
-Here we take PAFPN as an example.
+#### 1. Define a neck (e.g. PAFPN)
 
-1. Create a new file in `mmdet/models/necks/pafpn.py`.
+Create a new file `mmdet/models/necks/pafpn.py`.
 
-    ```python
-    from ..registry import NECKS
+```python
+from ..registry import NECKS
 
-    @NECKS.register
-    class PAFPN(nn.Module):
+@NECKS.register
+class PAFPN(nn.Module):
 
-        def __init__(self,
-                    in_channels,
-                    out_channels,
-                    num_outs,
-                    start_level=0,
-                    end_level=-1,
-                    add_extra_convs=False):
-            pass
+    def __init__(self,
+                in_channels,
+                out_channels,
+                num_outs,
+                start_level=0,
+                end_level=-1,
+                add_extra_convs=False):
+        pass
 
-        def forward(self, inputs):
-            # implementation is ignored
-            pass
-    ```
+    def forward(self, inputs):
+        # implementation is ignored
+        pass
+```
 
-2. Import the module in `mmdet/models/necks/__init__.py`.
+#### 2. Import the module.
 
-    ```python
-    from .pafpn import PAFPN
-    ```
+You can either add the following line to `mmdet/models/necks/__init__.py`,
 
-3. Modify the config file.
+```python
+from .pafpn import PAFPN
+```
 
-    ```python
-    neck=dict(
-        type='PAFPN',
-        in_channels=[256, 512, 1024, 2048],
-        out_channels=256,
-        num_outs=5)
-    ```
+or alternatively add
+
+```python
+custom_imports = dict(
+    imports=['mmdet.models.necks.mobilenet'],
+    allow_failed_imports=False)
+```
+to the config file and avoid modifying the original code.
+
+#### 3. Modify the config file.
+
+```python
+neck=dict(
+    type='PAFPN',
+    in_channels=[256, 512, 1024, 2048],
+    out_channels=256,
+    num_outs=5)
+```
 
 ### Add new heads
 
@@ -172,7 +125,7 @@ Double Head R-CNN implements a new bbox head for object detection.
 To implement a bbox head, basically we need to implement three functions of the new module as the following.
 
 ```python
-@HEADS.register_module
+@HEADS.register_module()
 class DoubleConvFCBBoxHead(BBoxHead):
     r"""Bbox head used in Double-Head R-CNN
 
@@ -214,7 +167,7 @@ from .base_roi_head import BaseRoIHead
 from .test_mixins import BBoxTestMixin, MaskTestMixin
 
 
-@HEADS.register_module
+@HEADS.register_module()
 class StandardRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
     """Simplest base roi head including one bbox head and one mask head.
     """
@@ -268,7 +221,7 @@ from ..builder import HEADS
 from .standard_roi_head import StandardRoIHead
 
 
-@HEADS.register_module
+@HEADS.register_module()
 class DoubleHeadRoIHead(StandardRoIHead):
     """RoI head for Double Head RCNN
 
@@ -298,9 +251,17 @@ class DoubleHeadRoIHead(StandardRoIHead):
         return bbox_results
 ```
 
-Last, the users need to add the module in the `mmdet/models/bbox_heads/__init__.py` and `mmdet/models/roi_heads/__init__.py` thus the corresponding registry could find and load them.
+Last, the users need to add the module in
+`mmdet/models/bbox_heads/__init__.py` and `mmdet/models/roi_heads/__init__.py` thus the corresponding registry could find and load them.
 
-To config file of Double Head R-CNN is as the following
+Alternatively, the users can add
+```python
+custom_imports=dict(
+    imports=['mmdet.models.roi_heads.double_roi_head', 'mmdet.models.bbox_heads.double_bbox_head'])
+```
+to the config file and achieve the same goal.
+
+The config file of Double Head R-CNN is as the following
 
 ```python
 _base_ = '../faster_rcnn/faster_rcnn_r50_fpn_1x_coco.py'
@@ -329,7 +290,7 @@ model = dict(
 
 ```
 
-Since MMDetection 2.0, the config system support to inherit configs such that the users can focus on the modification.
+Since MMDetection 2.0, the config system supports to inherit configs such that the users can focus on the modification.
 The Double Head R-CNN mainly uses a new DoubleHeadRoIHead and a new
 `DoubleConvFCBBoxHead`, the arguments are set according to the `__init__` function of each module.
 
@@ -353,7 +314,7 @@ def my_loss(pred, target):
     loss = torch.abs(pred - target)
     return loss
 
-@LOSSES.register_module
+@LOSSES.register_module()
 class MyLoss(nn.Module):
 
     def __init__(self, reduction='mean', loss_weight=1.0):
@@ -380,9 +341,15 @@ Then the users need to add it in the `mmdet/models/losses/__init__.py`.
 from .my_loss import MyLoss, my_loss
 
 ```
+Alternatively, you can add
+```python
+custom_imports=dict(
+    imports=['mmdet.models.losses.my_loss'])
+```
+to the config file and achieve the same goal.
 
 To use it, modify the `loss_xxx` field.
-Since MyLoss is for regrression, you need to modify the `loss_bbox` field in the head.
+Since MyLoss is for regression, you need to modify the `loss_bbox` field in the head.
 ```python
 loss_bbox=dict(type='MyLoss', loss_weight=1.0))
 ```
