@@ -376,7 +376,8 @@ class VFNetHead(AnchorFreeHead):
         num_imgs = cls_scores[0].size(0)
         # flatten cls_scores, bbox_preds and bbox_preds_refine
         flatten_cls_scores = [
-            cls_score.permute(0, 2, 3, 1).reshape(-1, self.cls_out_channels)
+            cls_score.permute(0, 2, 3, 1).reshape(
+                -1, self.cls_out_channels).contiguous()
             for cls_score in cls_scores
         ]
         flatten_bbox_preds = [
@@ -459,8 +460,8 @@ class VFNetHead(AnchorFreeHead):
                 cls_iou_targets = torch.zeros_like(flatten_cls_scores)
                 cls_iou_targets[pos_inds, pos_labels] = pos_ious
         else:
-            loss_bbox = pos_bbox_preds.sum()
-            loss_bbox_refine = pos_bbox_preds_refine.sum()
+            loss_bbox = pos_bbox_preds.sum() * 0
+            loss_bbox_refine = pos_bbox_preds_refine.sum() * 0
             if self.use_vfl:
                 cls_iou_targets = torch.zeros_like(flatten_cls_scores)
 
@@ -578,7 +579,7 @@ class VFNetHead(AnchorFreeHead):
                                                 mlvl_points):
             assert cls_score.size()[-2:] == bbox_pred.size()[-2:]
             scores = cls_score.permute(1, 2, 0).reshape(
-                -1, self.cls_out_channels).sigmoid()
+                -1, self.cls_out_channels).contiguous().sigmoid()
             bbox_pred = bbox_pred.permute(1, 2, 0).reshape(-1, 4)
 
             nms_pre = cfg.get('nms_pre', -1)
@@ -1028,7 +1029,7 @@ class VFNetHead(AnchorFreeHead):
                                            img_meta['img_shape'][:2],
                                            self.train_cfg.allowed_border)
         if not inside_flags.any():
-            return (None, ) * 6
+            return (None, ) * 7
         # assign gt and sample anchors
         anchors = flat_anchors[inside_flags, :]
 
