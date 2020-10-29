@@ -23,16 +23,16 @@ In this work, we propose to learn IoU-aware classification scores (**IACS**) tha
 
 
 ## Updates
-- [VarifocalNet](https://github.com/open-mmlab/mmdetection/tree/master/configs/vfnet) has been merged into the official MMDetection repo. Many thanks to @yhcao6, @RyanXLi and @hellock!
+- **2020.10.29** VarifocalNet has been merged into [the official MMDetection repo](https://github.com/open-mmlab/mmdetection/tree/master/configs/vfnet). Many thanks to [@yhcao6](https://github.com/yhcao6), [@RyanXLi](https://github.com/RyanXLi) and [@hellock](https://github.com/hellock)!
 
-- This repo has been refactored so that users can pull the latest updates from the upstream official MMDetection repo.
+- **2020.10.29** This repo has been refactored so that users can pull the latest updates from the upstream official MMDetection repo. The previous one can be found in the `old` branch.
 
 
 
 ## Installation
 - This VarifocalNet implementation is based on [MMDetection](https://github.com/open-mmlab/mmdetection). Therefore the installation is the same as original MMDetection.
 
-- Please check [INSTALL.md](docs/install.md) for installation. Note that you should change the version of PyTorch and CUDA to yours when installing **mmcv** (version of 1.1.5 is recommended) in `step c`, and clone this repo in `step d`, instead of mmdetection.
+- Please check [INSTALL.md](docs/install.md) for installation. Note that you should change the version of PyTorch and CUDA to yours when installing **mmcv** (version of 1.1.5 is recommended) in `step c`.
 
 - If you run into problems with `pycocotools`, please install it by:
 
@@ -127,7 +127,7 @@ The following command line will train `vfnet_r50_fpn_1x_coco` on 8 GPUs:
 - To use fewer GPUs, please change 8 to the number of your GPUs. If you want to keep the mini-batch size to 16, you need to change the [samples_per_gpu and workers_per_gpu](https://github.com/hyz-xmaster/VarifocalNet/blob/master/configs/vfnet/vfnet_r50_fpn_1x_coco.py#L92-L93) accordingly, so that `samplers_per_gpu x number_of_gpus = 16`. In general, `workers_per_gpu = samples_per_gpu`.
 - If you use a different mini-batch size, please change the [learning rate](https://github.com/hyz-xmaster/VarifocalNet/blob/master/configs/vfnet/vfnet_r50_fpn_1x_coco.py#L100) according to the [Linear Scaling Rule](https://arxiv.org/abs/1706.02677), e.g., lr=0.01 for 8 GPUs * 2 img/gpu and lr=0.005 for 4 GPUs * 2 img/gpu.
 - To train the VarifocalNet with other backbones, please change the config file accordingly.
-- To train the VarifocalNet on your own dataset, please follow this instruction [Adding New Dataset](https://github.com/open-mmlab/mmdetection/blob/master/docs/tutorials/new_dataset.md).
+- To train the VarifocalNet on your own dataset, please follow this instruction [Adding New Dataset](https://github.com/open-mmlab/mmdetection/blob/master/docs/tutorials/customize_dataset.md).
 
 
 ## Contributing

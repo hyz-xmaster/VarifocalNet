@@ -58,4 +58,4 @@ We also provide the models of RetinaNet, FoveaBox and RepPoints trained with the
 
 **Notes:**
 - We use 4 P100 GPUs for the training of these models with a mini-batch size of 16 images (4 images per GPU), as we found 4x4 training yielded slightly better results compared to 8x2 training.
-- `use_vfl` flag in those config files vfl_xxx controls whether use the Varifocal Loss in training or not.
+- `use_vfl` flag in those config files vfl_xxx controls whether to use the Varifocal Loss in training or not.
