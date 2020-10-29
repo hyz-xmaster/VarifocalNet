@@ -1,151 +1,152 @@
-<div align="center">
-  <img src="resources/mmdet-logo.png" width="600"/>
-</div>
+# VarifocalNet: An IoU-aware Dense Object Detector
 
-**News**: We released the technical report on [ArXiv](https://arxiv.org/abs/1906.07155).
+This project hosts the code for implementing the VarifocalNet, as presented in our paper:
 
-Documentation: https://mmdetection.readthedocs.io/
+```
+@article{zhang2020varifocalnet,
+  title={VarifocalNet: An IoU-aware Dense Object Detector},
+  author={Zhang, Haoyang and Wang, Ying and Dayoub, Feras and S{\"u}nderhauf, Niko},
+  journal={arXiv preprint arXiv:2008.13367},
+  year={2020}
+}
+```
+The full paper is available at: [https://arxiv.org/abs/2008.13367](https://arxiv.org/abs/2008.13367).
 
 ## Introduction
+In this work, we propose to learn IoU-aware classification scores (**IACS**) that simultaneously represent the object presence confidence and localization accuracy, to produce a more accurate rank of detections in dense object detectors. In particular, we design a new loss function, named **Varifocal Loss (VFL)**, for training a dense object detector to predict the IACS, and a new efficient star-shaped bounding box feature representation (the features at nine yellow sampling points) for estimating the IACS and refining coarse bounding boxes. Combining these two new components and a bounding box refinement branch, we build a new dense object detector on the FCOS architecture, what we call **VarifocalNet** or **VFNet** for short. Extensive experiments on MS COCO benchmark show that our VFNet consistently surpasses the strong baseline by ~2.0 AP with different backbones and our best model with Res2Net-101-DCN reaches a single-model single-scale AP of **51.3** on COCO `test-dev`, achieving the state-of-the-art among various object detectors.
 
-MMDetection is an open source object detection toolbox based on PyTorch. It is
-a part of the OpenMMLab project developed by [Multimedia Laboratory, CUHK](http://mmlab.ie.cuhk.edu.hk/).
 
-The master branch works with **PyTorch 1.3 to 1.6**.
-The old v1.x branch works with PyTorch 1.1 to 1.4, but v2.0 is strongly recommended for faster speed, higher performance, better design and more friendly usage.
+<div align="center">
+  <img src="VFNet.png" width="600px" />
+  <p>Learning to Predict the IoU-aware Classification Score.</p>
+</div>
 
-![demo image](resources/coco_test_12510.jpg)
 
-### Major features
+## Updates
+- [VarifocalNet](https://github.com/open-mmlab/mmdetection/tree/master/configs/vfnet) has been merged into the official MMDetection repo. Many thanks to @yhcao6, @RyanXLi and @hellock!
 
-- **Modular Design**
+- This repo has been refactored so that users can pull the latest updates from the upstream official MMDetection repo.
 
-  We decompose the detection framework into different components and one can easily construct a customized object detection framework by combining different modules.
 
-- **Support of multiple frameworks out of box**
-
-  The toolbox directly supports popular and contemporary detection frameworks, *e.g.* Faster RCNN, Mask RCNN, RetinaNet, etc.
-
-- **High efficiency**
-
-  All basic bbox and mask operations run on GPUs. The training speed is faster than or comparable to other codebases, including [Detectron2](https://github.com/facebookresearch/detectron2), [maskrcnn-benchmark](https://github.com/facebookresearch/maskrcnn-benchmark) and [SimpleDet](https://github.com/TuSimple/simpledet).
-
-- **State of the art**
-
-  The toolbox stems from the codebase developed by the *MMDet* team, who won [COCO Detection Challenge](http://cocodataset.org/#detection-leaderboard) in 2018, and we keep pushing it forward.
-
-Apart from MMDetection, we also released a library [mmcv](https://github.com/open-mmlab/mmcv) for computer vision research, which is heavily depended on by this toolbox.
-
-## License
-
-This project is released under the [Apache 2.0 license](LICENSE).
-
-## Changelog
-
-v2.4.0 was released in 5/9/2020.
-Please refer to [changelog.md](docs/changelog.md) for details and release history.
-A comparison between v1.x and v2.0 codebases can be found in [compatibility.md](docs/compatibility.md).
-
-## Benchmark and model zoo
-
-Results and models are available in the [model zoo](docs/model_zoo.md).
-
-Supported backbones:
-- [x] ResNet
-- [x] ResNeXt
-- [x] VGG
-- [x] HRNet
-- [x] RegNet
-- [x] Res2Net
-
-Supported methods:
-- [x] [RPN](configs/rpn)
-- [x] [Fast R-CNN](configs/fast_rcnn)
-- [x] [Faster R-CNN](configs/faster_rcnn)
-- [x] [Mask R-CNN](configs/mask_rcnn)
-- [x] [Cascade R-CNN](configs/cascade_rcnn)
-- [x] [Cascade Mask R-CNN](configs/cascade_rcnn)
-- [x] [SSD](configs/ssd)
-- [x] [RetinaNet](configs/retinanet)
-- [x] [GHM](configs/ghm)
-- [x] [Mask Scoring R-CNN](configs/ms_rcnn)
-- [x] [Double-Head R-CNN](configs/double_heads)
-- [x] [Hybrid Task Cascade](configs/htc)
-- [x] [Libra R-CNN](configs/libra_rcnn)
-- [x] [Guided Anchoring](configs/guided_anchoring)
-- [x] [FCOS](configs/fcos)
-- [x] [RepPoints](configs/reppoints)
-- [x] [Foveabox](configs/foveabox)
-- [x] [FreeAnchor](configs/free_anchor)
-- [x] [NAS-FPN](configs/nas_fpn)
-- [x] [ATSS](configs/atss)
-- [x] [FSAF](configs/fsaf)
-- [x] [PAFPN](configs/pafpn)
-- [x] [Dynamic R-CNN](configs/dynamic_rcnn)
-- [x] [PointRend](configs/point_rend)
-- [x] [CARAFE](configs/carafe/README.md)
-- [x] [DCNv2](configs/dcn/README.md)
-- [x] [Group Normalization](configs/gn/README.md)
-- [x] [Weight Standardization](configs/gn+ws/README.md)
-- [x] [OHEM](configs/faster_rcnn/faster_rcnn_r50_fpn_ohem_1x_coco.py)
-- [x] [Soft-NMS](configs/faster_rcnn/faster_rcnn_r50_fpn_soft_nms_1x_coco.py)
-- [x] [Generalized Attention](configs/empirical_attention/README.md)
-- [x] [GCNet](configs/gcnet/README.md)
-- [x] [Mixed Precision (FP16) Training](configs/fp16/README.md)
-- [x] [InstaBoost](configs/instaboost/README.md)
-- [x] [GRoIE](configs/groie/README.md)
-- [x] [DetectoRS](configs/detectors/README.md)
-- [x] [Generalized Focal Loss](configs/gfl/README.md)
-- [x] [CornerNet](configs/cornernet/README.md)
-- [x] [Side-Aware Boundary Localization](configs/sabl/README.md)
-- [x] [YOLOv3](configs/yolo/README.md)
-- [x] [PAA](configs/paa/README.md)
-- [x] [YOLACT](configs/yolact/README.md)
-- [x] [CentripetalNet](configs/centripetalnet/README.md)
-- [x] [VFNet](configs/vfnet/README.md)
-
-Some other methods are also supported in [projects using MMDetection](./docs/projects.md).
 
 ## Installation
+- This VarifocalNet implementation is based on [MMDetection](https://github.com/open-mmlab/mmdetection). Therefore the installation is the same as original MMDetection.
 
-Please refer to [install.md](docs/install.md) for installation and dataset preparation.
+- Please check [INSTALL.md](docs/install.md) for installation. Note that you should change the version of PyTorch and CUDA to yours when installing **mmcv** (version of 1.1.5 is recommended) in `step c`, and clone this repo in `step d`, instead of mmdetection.
+
+- If you run into problems with `pycocotools`, please install it by:
+
+  ```
+  pip install "git+https://github.com/open-mmlab/cocoapi.git#subdirectory=pycocotools"
+  ```
+
+## A Quick Demo
+Once the installation is done, you can follow the steps below to run a quick demo.
+- Download the [model](https://drive.google.com/file/d/1aF3Fi5rYeMqSC3Ndo4VEqjPXk4fcOfjt/view?usp=sharing) and put it into one folder under the root directory of this project, say, `checkpoints/`.
+- Go to the root directory of this project in terminal and activate the corresponding virtual environment.
+- Run
+  ```
+  python demo/image_demo.py demo/demo.jpg configs/vfnet/vfnet_r50_fpn_1x_coco.py checkpoints/vfnet_r50_1x_41.6.pth
+  ```
+  and you should see an image with detections.
 
 ## Getting Started
-
 Please see [getting_started.md](docs/getting_started.md) for the basic usage of MMDetection.
-We provide [colab tutorial](demo/MMDet_Tutorial.ipynb) for beginners.
-There are also tutorials for [finetuning models](docs/tutorials/finetune.md), [adding new dataset](docs/tutorials/new_dataset.md), [designing data pipeline](docs/tutorials/data_pipeline.md), [customizing models](docs/tutorials/customize_models.md), and [customizing runtime settings](docs/tutorials/customize_runtime.md).
+They also provide [colab tutorial](demo/MMDet_Tutorial.ipynb) for beginners.
 
 For trouble shooting, please refer to [trouble_shooting.md](docs/trouble_shooting.md)
 
-## Contributing
 
-We appreciate all contributions to improve MMDetection. Please refer to [CONTRIBUTING.md](.github/CONTRIBUTING.md) for the contributing guideline.
+## Results and Models
+For your convenience, we provide the following trained models. These models are trained with a mini-batch size of 16 images on 8 Nvidia V100 GPUs (2 images per GPU).
 
-## Acknowledgement
+| Backbone     | Style     | DCN     | MS <br> train | Lr <br> schd |Inf time <br> (fps) | box AP <br> (val) | box AP <br> (test-dev) | &nbsp; &nbsp; Download  &nbsp; &nbsp;  |
+|:------------:|:---------:|:-------:|:-------------:|:------------:|:------------------:|:-----------------:|:----------------------:|:--------------------------------------:|
+| R-50         | pytorch   | N       | N             | 1x           | 19.4               | 41.6              | 41.6                   | [model](https://drive.google.com/file/d/1aF3Fi5rYeMqSC3Ndo4VEqjPXk4fcOfjt/view?usp=sharing) &#124; [log](https://drive.google.com/file/d/16tufMtxWI5Zq2Bx9VNt57Fxt8VnlBmnR/view?usp=sharing)|
+| R-50         | pytorch   | N       | Y             | 2x           | 19.3               | 44.5              | 44.8                   | [model](https://drive.google.com/file/d/1oAUu7zGZmPni0XZu8XJMDWR5GJi_pwYz/view?usp=sharing) &#124; [log](https://drive.google.com/file/d/1sFlRVMyTGcZBmnMxx1T_ulNHTC_JoynF/view?usp=sharing)|
+| R-50         | pytorch   | Y       | Y             | 2x           | 16.3               | 47.8              | 48.0                   | [model](https://drive.google.com/file/d/16rk1pCPmQOj98GkpM-y3IPBpdKcfq0I4/view?usp=sharing) &#124; [log](https://drive.google.com/file/d/1pcOW7CjJYz0XHRkZKi_TjoD4hj4mz6DP/view?usp=sharing)|
+| R-101        | pytorch   | N       | N             | 1x           | 15.5               | 43.0              | 43.6                   | [model](https://drive.google.com/file/d/1z76RBD6fI43IQn2tGuSJ5KonuJE49Nfk/view?usp=sharing) &#124; [log](https://drive.google.com/file/d/1ASitqJL2puajfpFVQv04VVKWSvkWqIKq/view?usp=sharing)|
+| R-101        | pytorch   | N       | N             | 2x           | 15.6               | 43.5              | 43.9                   | [model](https://drive.google.com/file/d/1SXYCfkOXXGBhvURcqH23DA5gIwSFYz2u/view?usp=sharing) &#124; [log](https://drive.google.com/file/d/1abueLX2H4R-zr5kMw1WDbzf4wSQ2my3_/view?usp=sharing)|
+| R-101        | pytorch   | N       | Y             | 2x           | 15.6               | 46.2              | 46.7                   | [model](https://drive.google.com/file/d/1ioQ2Fdbp4OS2Oi6g7no6fqU2-V8TtOTz/view?usp=sharing) &#124; [log](https://drive.google.com/file/d/1XA9_xH0TmOJgsbAQ05MV1AdcS6AkKvfz/view?usp=sharing)|
+| R-101        | pytorch   | Y       | Y             | 2x           | 12.6               | 49.0              | 49.2                   | [model](https://drive.google.com/file/d/1W-Wkl3e3f64PzP8vJ0iB5svMqNlOzPyI/view?usp=sharing) &#124; [log](https://drive.google.com/file/d/1qvKopNIXZsexEMBXP7TA_agxw-qul6id/view?usp=sharing)|
+| X-101-32x4d  | pytorch   | N       | Y             | 2x           | 13.1               | 47.4              | 47.6                   | [model](https://drive.google.com/file/d/1X-soI6dyFxv0jWOKxthPPsVeyqIRRa-F/view?usp=sharing) &#124; [log](https://drive.google.com/file/d/1ywK17-fJYWqTabl8NE-JOFKhk6ihXy25/view?usp=sharing)|
+| X-101-32x4d  | pytorch   | Y       | Y             | 2x           | 10.1               | 49.7              | 50.0                   | [model](https://drive.google.com/file/d/1QtMyI4tjccigDPn2A-V1sQuK-Z6eTHwq/view?usp=sharing) &#124; [log](https://drive.google.com/file/d/1OqEIS4wnBdkSLTVn2mLhyOEef0yuNZyg/view?usp=sharing)|
+| X-101-64x4d  | pytorch   | N       | Y             | 2x           |  9.2               | 48.2              | 48.5                   | [model](https://drive.google.com/file/d/1m0BQ6XyAlxNdJQVbg_4OuEgEctywPVx9/view?usp=sharing) &#124; [log](https://drive.google.com/file/d/1DFgBSzWyIaPo7UZsY2oRhxq1-W0gre8Z/view?usp=sharing)|
+| X-101-64x4d  | pytorch   | Y       | Y             | 2x           |  6.7               | 50.4              | 50.8                   | [model](https://drive.google.com/file/d/1GkyJirn8J10TTyWiyw5C4boKWlW9epSU/view?usp=sharing) &#124; [log](https://drive.google.com/file/d/1ZPPiX1KhT6D48OPSOnPPGa9NqPa4HePG/view?usp=sharing)|
+| R2-101       | pytorch   | N       | Y             | 2x           | 13.0               | 49.2              | 49.3                   | [model](https://drive.google.com/file/d/1E4o1CxaWUQV7-HAyqbITw7JD8mOF7tNW/view?usp=sharing) &#124; [log](https://drive.google.com/file/d/1ESnWn7nXRJVcqQb5OjH3c6XM8Rqc4shI/view?usp=sharing)|
+| R2-101       | pytorch   | Y       | Y             | 2x           | 10.3               | 51.1              | 51.3                   | [model](https://drive.google.com/file/d/1kCiEqAA_VQlhbiNuZ3HWGhBD1JvVpK0c/view?usp=sharing) &#124; [log](https://drive.google.com/file/d/1BTwm-knCIT-kzkASjWNMfRWaAwI0ONmC/view?usp=sharing)|
 
-MMDetection is an open source project that is contributed by researchers and engineers from various colleges and companies. We appreciate all the contributors who implement their methods or add new features, as well as users who give valuable feedbacks.
-We wish that the toolbox and benchmark could serve the growing research community by providing a flexible toolkit to reimplement existing methods and develop their own new detectors.
 
-## Citation
+**Notes:**
+- The MS-train maximum scale range is 1333x[480:960] (`range` mode) and the inference scale keeps 1333x800.
+- The R2-101 backbone is [Res2Net-101](https://github.com/Res2Net/mmdetection).
+- DCN means using `DCNv2` in both backbone and head.
+- The inference speed is tested with a Nvidia V100 GPU on HPC ([log file](https://drive.google.com/file/d/1dc9296G6JevouLixj-g81VgccEt54ceP/view?usp=sharing)).
 
-If you use this toolbox or benchmark in your research, please cite this project.
+We also provide the models of RetinaNet, FoveaBox and RepPoints trained with the Focal Loss (FL) and our Varifocal Loss (VFL).
+
+| Method          | Backbone | MS train | Lr schd | box AP (val) | Download |
+|:---------------:|:--------:|:--------:|:-------:|:------------:|:--------:|
+| RetinaNet + FL  | R-50     | N        | 1x      | 36.5         | [model](https://drive.google.com/file/d/1jvz6f6_uhiFoulW3qP3aN1P142jRJgky/view?usp=sharing) &#124; [log](https://drive.google.com/file/d/15KzsNNurMnBiPIbzifNhmzxRHgbJwbtZ/view?usp=sharing) |
+| RetinaNet + VFL | R-50     | N        | 1x      | 37.4         | [model](https://drive.google.com/file/d/1FuWtTdr-NlcqVJW35lhlicCk2hmtIip8/view?usp=sharing) &#124; [log](https://drive.google.com/file/d/16QnRZKJmofil75Ua7uANkqwpJzQ6oh1I/view?usp=sharing) |
+| FoveaBox + FL   | R-50     | N        | 1x      | 36.3         | [model](https://drive.google.com/file/d/1NG9ovPa9qVUZ6uFeJct3I7koQGBwvQ_b/view?usp=sharing) &#124; [log](https://drive.google.com/file/d/15LP3A7oIte4ofgqWGePLx9bbu4FzIZK3/view?usp=sharing) |
+| FoveaBox + VFL  | R-50     | N        | 1x      | 37.2         | [model](https://drive.google.com/file/d/1mS9guZmgPeZj-Sgo0HLE5B881pdT2PyJ/view?usp=sharing) &#124; [log](https://drive.google.com/file/d/1dcAUFHQTJJ6UWr0fcLRju87cIagUQtfM/view?usp=sharing) |
+| RepPoints + FL  | R-50     | N        | 1x      | 38.3         | [model](https://drive.google.com/file/d/1qpH5gGmI_x5EkT5gc0uwK3gTjPG6vzp2/view?usp=sharing) &#124; [log](https://drive.google.com/file/d/1isphNH_21qfgL6ZFtFl-94MZyins8yYX/view?usp=sharing) |
+| RepPoints + VFL | R-50     | N        | 1x      | 39.7         | [model](https://drive.google.com/file/d/17-SPlxq_qmfEPiEBwDlm0aV81Sh3AF1W/view?usp=sharing) &#124; [log](https://drive.google.com/file/d/1aC5wB3P05u_sCbnoSZUuNSnZVMJrMoiC/view?usp=sharing) |
+
+**Notes:**
+- We use 4 P100 GPUs for the training of these models with a mini-batch size of 16 images (4 images per GPU), as we found 4x4 training yielded slightly better results compared to 8x2 training.
+- You can find corresponding config files in [configs/vfnet](configs/vfnet).
+- `use_vfl` flag in those config files controls whether to use the Varifocal Loss in training or not.
+
+
+## Inference
+Assuming you have put the COCO dataset into `data/coco/` and have downloaded the models into the `checkpoints/`, you can now evaluate the models on the COCO val2017 split:
 
 ```
-@article{mmdetection,
-  title   = {{MMDetection}: Open MMLab Detection Toolbox and Benchmark},
-  author  = {Chen, Kai and Wang, Jiaqi and Pang, Jiangmiao and Cao, Yuhang and
-             Xiong, Yu and Li, Xiaoxiao and Sun, Shuyang and Feng, Wansen and
-             Liu, Ziwei and Xu, Jiarui and Zhang, Zheng and Cheng, Dazhi and
-             Zhu, Chenchen and Cheng, Tianheng and Zhao, Qijie and Li, Buyu and
-             Lu, Xin and Zhu, Rui and Wu, Yue and Dai, Jifeng and Wang, Jingdong
-             and Shi, Jianping and Ouyang, Wanli and Loy, Chen Change and Lin, Dahua},
-  journal= {arXiv preprint arXiv:1906.07155},
-  year={2019}
+./tools/dist_test.sh configs/vfnet/vfnet_r50_fpn_1x_coco.py checkpoints/vfnet_r50_1x_41.6.pth 8 --eval bbox
+```
+**Notes:**
+- If you have less than 8 gpus available on your machine, please change 8 into the number of your gpus.
+- If you want to evaluate a different model, please change the config file (in [configs/vfnet](configs/vfnet)) and corresponding model weights file.
+- Test time augmentation is supported for the VarifocalNet, including multi-scale testing and flip testing. If you are interested, please refer to an example config file [vfnet_r50_fpn_1x_coco_tta.py](https://github.com/hyz-xmaster/VarifocalNet/blob/master/configs/vfnet/vfnet_r50_fpn_1x_coco_tta.py#L80-L83). More information about test time augmentation can be found in the official script [test_time_aug.py](https://github.com/hyz-xmaster/VarifocalNet/blob/master/mmdet/datasets/pipelines/test_time_aug.py).
+
+
+
+
+## Training
+
+The following command line will train `vfnet_r50_fpn_1x_coco` on 8 GPUs:
+
+```
+./tools/dist_train.sh configs/vfnet/vfnet_r50_fpn_1x_coco.py 8
+```
+
+**Notes:**
+- The models will be saved into `work_dirs/vfnet_r50_fpn_1x_coco`.
+- To use fewer GPUs, please change 8 to the number of your GPUs. If you want to keep the mini-batch size to 16, you need to change the [samples_per_gpu and workers_per_gpu](https://github.com/hyz-xmaster/VarifocalNet/blob/master/configs/vfnet/vfnet_r50_fpn_1x_coco.py#L92-L93) accordingly, so that `samplers_per_gpu x number_of_gpus = 16`. In general, `workers_per_gpu = samples_per_gpu`.
+- If you use a different mini-batch size, please change the [learning rate](https://github.com/hyz-xmaster/VarifocalNet/blob/master/configs/vfnet/vfnet_r50_fpn_1x_coco.py#L100) according to the [Linear Scaling Rule](https://arxiv.org/abs/1706.02677), e.g., lr=0.01 for 8 GPUs * 2 img/gpu and lr=0.005 for 4 GPUs * 2 img/gpu.
+- To train the VarifocalNet with other backbones, please change the config file accordingly.
+- To train the VarifocalNet on your own dataset, please follow this instruction [Adding New Dataset](https://github.com/open-mmlab/mmdetection/blob/master/docs/tutorials/new_dataset.md).
+
+
+## Contributing
+Any pull requests or issues are welcome.
+
+
+## Citation
+Please consider citing our paper in your publications if the project helps your research. BibTeX reference is as follows:
+```
+@article{zhang2020varifocalnet,
+  title={VarifocalNet: An IoU-aware Dense Object Detector},
+  author={Zhang, Haoyang and Wang, Ying and Dayoub, Feras and S{\"u}nderhauf, Niko},
+  journal={arXiv preprint arXiv:2008.13367},
+  year={2020}
 }
 ```
 
-## Contact
+# Acknowledgment
+We would like to thank MMDetection team for producing this great object detection toolbox!
 
-This repo is currently maintained by Kai Chen ([@hellock](http://github.com/hellock)), Yuhang Cao ([@yhcao6](https://github.com/yhcao6)), Wenwei Zhang ([@ZwwWayne](https://github.com/ZwwWayne)),
-Jiarui Xu ([@xvjiarui](https://github.com/xvjiarui)). Other core developers include Jiangmiao Pang ([@OceanPang](https://github.com/OceanPang)) and Jiaqi Wang ([@myownskyW7](https://github.com/myownskyW7)).
+## License
+This project is released under the [Apache 2.0 license](LICENSE).

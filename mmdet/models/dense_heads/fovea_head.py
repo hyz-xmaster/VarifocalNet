@@ -3,8 +3,8 @@ import torch.nn as nn
 from mmcv.cnn import ConvModule, normal_init
 from mmcv.ops import DeformConv2d
 
-from mmdet.core import multi_apply, multiclass_nms
-from ..builder import HEADS
+from mmdet.core import bbox_overlaps, multi_apply, multiclass_nms
+from ..builder import HEADS, build_loss
 from .anchor_free_head import AnchorFreeHead
 
 INF = 1e8
@@ -54,6 +54,14 @@ class FoveaHead(AnchorFreeHead):
                  sigma=0.4,
                  with_deform=False,
                  deform_groups=4,
+                 use_vfl=False,
+                 loss_cls_vfl=dict(
+                     type='VarifocalLoss',
+                     use_sigmoid=True,
+                     alpha=0.75,
+                     gamma=2.0,
+                     iou_weighted=True,
+                     loss_weight=1.0),
                  **kwargs):
         self.base_edge_list = base_edge_list
         self.scale_ranges = scale_ranges
@@ -61,6 +69,9 @@ class FoveaHead(AnchorFreeHead):
         self.with_deform = with_deform
         self.deform_groups = deform_groups
         super().__init__(num_classes, in_channels, **kwargs)
+        self.use_vfl = use_vfl
+        if self.use_vfl:
+            self.loss_cls = build_loss(loss_cls_vfl)
 
     def _init_layers(self):
         # box branch
@@ -147,16 +158,18 @@ class FoveaHead(AnchorFreeHead):
         ]
         flatten_cls_scores = torch.cat(flatten_cls_scores)
         flatten_bbox_preds = torch.cat(flatten_bbox_preds)
-        flatten_labels, flatten_bbox_targets = self.get_targets(
-            gt_bbox_list, gt_label_list, featmap_sizes, points)
+
+        bbox_preds_x1y1x2y2 = self.decode_bbox(bbox_preds, img_metas)
+        flatten_bbox_preds_x1y1x2y2 = torch.cat(bbox_preds_x1y1x2y2)
+        flatten_labels, flatten_bbox_targets, flatten_bbox_targets_x1y1x2y2 = \
+            self.get_targets(
+                gt_bbox_list, gt_label_list, featmap_sizes, points)
 
         # FG cat_id: [0, num_classes -1], BG cat_id: num_classes
         pos_inds = ((flatten_labels >= 0)
                     & (flatten_labels < self.num_classes)).nonzero().view(-1)
         num_pos = len(pos_inds)
 
-        loss_cls = self.loss_cls(
-            flatten_cls_scores, flatten_labels, avg_factor=num_pos + num_imgs)
         if num_pos > 0:
             pos_bbox_preds = flatten_bbox_preds[pos_inds]
             pos_bbox_targets = flatten_bbox_targets[pos_inds]
@@ -167,20 +180,77 @@ class FoveaHead(AnchorFreeHead):
                 pos_bbox_targets,
                 pos_weights,
                 avg_factor=num_pos)
+
+            pos_bbox_preds_x1y1x2y2 = flatten_bbox_preds_x1y1x2y2[pos_inds]
+            pos_bbox_targets_x1y1x2y2 = \
+                flatten_bbox_targets_x1y1x2y2[pos_inds]
+            pos_ious = bbox_overlaps(
+                pos_bbox_preds_x1y1x2y2.detach(),
+                pos_bbox_targets_x1y1x2y2.detach(),
+                is_aligned=True).clamp(min=1e-6)
+            pos_labels = flatten_labels[pos_inds]
+            cls_iou_targets = torch.zeros_like(flatten_cls_scores)
+            cls_iou_targets[pos_inds, pos_labels] = pos_ious
         else:
             loss_bbox = torch.tensor(
                 0,
                 dtype=flatten_bbox_preds.dtype,
                 device=flatten_bbox_preds.device)
+            cls_iou_targets = torch.zeros_like(flatten_cls_scores)
+
+        if self.use_vfl:
+            loss_cls = self.loss_cls(
+                flatten_cls_scores,
+                cls_iou_targets,
+                avg_factor=num_pos + num_imgs)
+        else:
+            loss_cls = self.loss_cls(
+                flatten_cls_scores,
+                flatten_labels,
+                avg_factor=num_pos + num_imgs)
         return dict(loss_cls=loss_cls, loss_bbox=loss_bbox)
 
+    def decode_bbox(self, bbox_preds, img_metas):
+        featmap_sizes = [featmap.size()[-2:] for featmap in bbox_preds]
+        point_list = self.get_points(
+            featmap_sizes,
+            bbox_preds[0].dtype,
+            bbox_preds[0].device,
+            flatten=True)
+        img_shape = img_metas[0]['img_shape']
+        num_imgs = len(img_metas)
+        decode_bboxes = []
+        for bbox_pred, featmap_size, stride, base_len, (y, x) \
+                in zip(bbox_preds, featmap_sizes, self.strides,
+                       self.base_edge_list, point_list):
+            bbox_pred = bbox_pred.clone().detach().permute(0, 2, 3, 1).\
+                reshape(-1, 4).exp()
+            x1 = (stride * x.repeat(num_imgs) - base_len * bbox_pred[:, 0]).\
+                clamp(min=0, max=img_shape[1] - 1)
+            y1 = (stride * y.repeat(num_imgs) - base_len * bbox_pred[:, 1]).\
+                clamp(min=0, max=img_shape[0] - 1)
+            x2 = (stride * x.repeat(num_imgs) + base_len * bbox_pred[:, 2]).\
+                clamp(min=0, max=img_shape[1] - 1)
+            y2 = (stride * y.repeat(num_imgs) + base_len * bbox_pred[:, 3]).\
+                clamp(min=0, max=img_shape[0] - 1)
+            bboxes = torch.stack([x1, y1, x2, y2], -1)
+            decode_bboxes.append(bboxes)
+        return decode_bboxes
+
     def get_targets(self, gt_bbox_list, gt_label_list, featmap_sizes, points):
-        label_list, bbox_target_list = multi_apply(
+        label_list, bbox_target_list, bbox_targets_x1y1x2y2_list = multi_apply(
             self._get_target_single,
             gt_bbox_list,
             gt_label_list,
             featmap_size_list=featmap_sizes,
             point_list=points)
+        flatten_bbox_targets_x1y1x2y2 = [
+            torch.cat([
+                bbox_targets_x1y1x2y2_level_img.reshape(-1, 4) for
+                bbox_targets_x1y1x2y2_level_img in bbox_targets_x1y1x2y2_level
+            ])
+            for bbox_targets_x1y1x2y2_level in zip(*bbox_targets_x1y1x2y2_list)
+        ]
         flatten_labels = [
             torch.cat([
                 labels_level_img.flatten() for labels_level_img in labels_level
@@ -194,7 +264,11 @@ class FoveaHead(AnchorFreeHead):
         ]
         flatten_labels = torch.cat(flatten_labels)
         flatten_bbox_targets = torch.cat(flatten_bbox_targets)
-        return flatten_labels, flatten_bbox_targets
+        flatten_bbox_targets_x1y1x2y2 = torch.cat(
+            flatten_bbox_targets_x1y1x2y2)
+
+        return (flatten_labels, flatten_bbox_targets,
+                flatten_bbox_targets_x1y1x2y2)
 
     def _get_target_single(self,
                            gt_bboxes_raw,
@@ -206,6 +280,7 @@ class FoveaHead(AnchorFreeHead):
                               (gt_bboxes_raw[:, 3] - gt_bboxes_raw[:, 1]))
         label_list = []
         bbox_target_list = []
+        bbox_targets_x1y1x2y2_list = []
         # for each pyramid, find the cls and box target
         for base_len, (lower_bound, upper_bound), stride, featmap_size, \
             (y, x) in zip(self.base_edge_list, self.scale_ranges,
@@ -214,12 +289,15 @@ class FoveaHead(AnchorFreeHead):
             labels = gt_labels_raw.new_zeros(featmap_size) + self.num_classes
             bbox_targets = gt_bboxes_raw.new(featmap_size[0], featmap_size[1],
                                              4) + 1
+            bbox_targets_x1y1x2y2 = gt_bboxes_raw.new_zeros(
+                featmap_size[0], featmap_size[1], 4) + 1.0
             # scale assignment
             hit_indices = ((gt_areas >= lower_bound) &
                            (gt_areas <= upper_bound)).nonzero().flatten()
             if len(hit_indices) == 0:
                 label_list.append(labels)
                 bbox_target_list.append(torch.log(bbox_targets))
+                bbox_targets_x1y1x2y2_list.append(bbox_targets_x1y1x2y2)
                 continue
             _, hit_index_order = torch.sort(-gt_areas[hit_indices])
             hit_indices = hit_indices[hit_index_order]
@@ -252,10 +330,16 @@ class FoveaHead(AnchorFreeHead):
                     (gt_x2 - stride * x[py1:py2 + 1, px1:px2 + 1]) / base_len
                 bbox_targets[py1:py2 + 1, px1:px2 + 1, 3] = \
                     (gt_y2 - stride * y[py1:py2 + 1, px1:px2 + 1]) / base_len
+
+                bbox_targets_x1y1x2y2[py1:py2 + 1, px1:px2 + 1, 0] = gt_x1
+                bbox_targets_x1y1x2y2[py1:py2 + 1, px1:px2 + 1, 1] = gt_y1
+                bbox_targets_x1y1x2y2[py1:py2 + 1, px1:px2 + 1, 2] = gt_x2
+                bbox_targets_x1y1x2y2[py1:py2 + 1, px1:px2 + 1, 3] = gt_y2
             bbox_targets = bbox_targets.clamp(min=1. / 16, max=16.)
             label_list.append(labels)
             bbox_target_list.append(torch.log(bbox_targets))
-        return label_list, bbox_target_list
+            bbox_targets_x1y1x2y2_list.append(bbox_targets_x1y1x2y2)
+        return label_list, bbox_target_list, bbox_targets_x1y1x2y2_list
 
     def get_bboxes(self,
                    cls_scores,

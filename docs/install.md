@@ -47,7 +47,7 @@ you can use more CUDA versions such as 9.0.
 c. Install mmcv, we recommend you to install the pre-build mmcv as below.
 
 ```shell
-pip install mmcv-full==latest+torch1.5.0+cu101 -f https://download.openmmlab.com/mmcv/dist/index.html
+pip install mmcv-full==latest+torch1.6.0+cu101 -f https://download.openmmlab.com/mmcv/dist/index.html
 ```
 
 See [here](https://github.com/open-mmlab/mmcv#install-with-pip) for different versions of MMCV compatible to different PyTorch and CUDA versions.
@@ -85,11 +85,11 @@ pip install mmcv-full
 2. You need to run `pip uninstall mmcv` first if you have mmcv installed.
 If mmcv and mmcv-full are both installed, there will be `ModuleNotFoundError`.
 
-d. Clone the mmdetection repository.
+d. Clone this repository.
 
 ```shell
-git clone https://github.com/open-mmlab/mmdetection.git
-cd mmdetection
+git clone https://github.com/hyz-xmaster/VarifocalNet.git
+cd VarifocalNet
 ```
 
 e. Install build requirements and then install mmdetection.
@@ -160,7 +160,7 @@ docker run --gpus all --shm-size=8g -it -v {DATA_DIR}:/mmdetection/data mmdetect
 
 ### A from-scratch setup script
 
-Here is a full script for setting up mmdetection with conda.
+Here is a full script for setting up VarifocalNet with conda.
 
 ```shell
 conda create -n open-mmlab python=3.7 -y
@@ -173,8 +173,8 @@ conda install -c pytorch pytorch torchvision -y
 pip install mmcv-full
 
 # install mmdetection
-git clone https://github.com/open-mmlab/mmdetection.git
-cd mmdetection
+git clone https://github.com/hyz-xmaster/VarifocalNet.git
+cd VarifocalNet
 pip install -r requirements/build.txt
 pip install -v -e .
 ```

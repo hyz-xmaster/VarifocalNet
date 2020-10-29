@@ -4,8 +4,9 @@ import torch.nn as nn
 from mmcv.cnn import ConvModule, bias_init_with_prob, normal_init
 from mmcv.ops import DeformConv2d
 
-from mmdet.core import (PointGenerator, build_assigner, build_sampler,
-                        images_to_levels, multi_apply, multiclass_nms, unmap)
+from mmdet.core import (PointGenerator, bbox_overlaps, build_assigner,
+                        build_sampler, images_to_levels, multi_apply,
+                        multiclass_nms, unmap)
 from ..builder import HEADS, build_loss
 from .anchor_free_head import AnchorFreeHead
 
@@ -42,6 +43,14 @@ class RepPointsHead(AnchorFreeHead):
                      use_sigmoid=True,
                      gamma=2.0,
                      alpha=0.25,
+                     loss_weight=1.0),
+                 use_vfl=False,
+                 loss_cls_vfl=dict(
+                     type='VarifocalLoss',
+                     use_sigmoid=True,
+                     alpha=0.75,
+                     gamma=2.0,
+                     iou_weighted=True,
                      loss_weight=1.0),
                  loss_bbox_init=dict(
                      type='SmoothL1Loss', beta=1.0 / 9.0, loss_weight=0.5),
@@ -101,6 +110,11 @@ class RepPointsHead(AnchorFreeHead):
             self.cls_out_channels = self.num_classes
         else:
             self.cls_out_channels = self.num_classes + 1
+        self.use_vfl = use_vfl
+        if self.use_vfl:
+            self.loss_cls = build_loss(loss_cls_vfl)
+        else:
+            self.loss_cls = build_loss(loss_cls)
         self.loss_bbox_init = build_loss(loss_bbox_init)
         self.loss_bbox_refine = build_loss(loss_bbox_refine)
 
@@ -537,12 +551,6 @@ class RepPointsHead(AnchorFreeHead):
         cls_score = cls_score.permute(0, 2, 3,
                                       1).reshape(-1, self.cls_out_channels)
         cls_score = cls_score.contiguous()
-        loss_cls = self.loss_cls(
-            cls_score,
-            labels,
-            label_weights,
-            avg_factor=num_total_samples_refine)
-
         # points loss
         bbox_gt_init = bbox_gt_init.reshape(-1, 4)
         bbox_weights_init = bbox_weights_init.reshape(-1, 4)
@@ -563,6 +571,29 @@ class RepPointsHead(AnchorFreeHead):
             bbox_gt_refine / normalize_term,
             bbox_weights_refine,
             avg_factor=num_total_samples_refine)
+        if self.use_vfl:
+            pos_inds = ((labels >= 0)
+                        & (labels < self.num_classes)).nonzero().reshape(-1)
+            pos_labels = labels[pos_inds]
+            ious = bbox_overlaps(
+                bbox_pred_refine.detach(),
+                bbox_gt_refine.detach(),
+                is_aligned=True)
+            pos_ious = ious[pos_inds]
+            cls_iou_targets = torch.zeros_like(cls_score)
+            cls_iou_targets[pos_inds, pos_labels] = pos_ious
+            loss_cls = self.loss_cls(
+                cls_score,
+                cls_iou_targets,
+                label_weights.unsqueeze(1),
+                avg_factor=num_total_samples_refine)
+        else:
+            loss_cls = self.loss_cls(
+                cls_score,
+                labels,
+                label_weights,
+                avg_factor=num_total_samples_refine)
+
         return loss_cls, loss_pts_init, loss_pts_refine
 
     def loss(self,

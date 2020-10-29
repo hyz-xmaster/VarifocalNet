@@ -3,9 +3,10 @@ import torch.nn as nn
 from mmcv.cnn import normal_init
 from mmcv.runner import force_fp32
 
-from mmdet.core import (anchor_inside_flags, build_anchor_generator,
-                        build_assigner, build_bbox_coder, build_sampler,
-                        images_to_levels, multi_apply, multiclass_nms, unmap)
+from mmdet.core import (anchor_inside_flags, bbox_overlaps,
+                        build_anchor_generator, build_assigner,
+                        build_bbox_coder, build_sampler, images_to_levels,
+                        multi_apply, multiclass_nms, unmap)
 from ..builder import HEADS, build_loss
 from .base_dense_head import BaseDenseHead
 from .dense_test_mixins import BBoxTestMixin
@@ -48,6 +49,14 @@ class AnchorHead(BaseDenseHead, BBoxTestMixin):
                      type='CrossEntropyLoss',
                      use_sigmoid=True,
                      loss_weight=1.0),
+                 use_vfl=False,
+                 loss_cls_vfl=dict(
+                     type='VarifocalLoss',
+                     use_sigmoid=True,
+                     alpha=0.75,
+                     gamma=2.0,
+                     iou_weighted=True,
+                     loss_weight=1.0),
                  loss_bbox=dict(
                      type='SmoothL1Loss', beta=1.0 / 9.0, loss_weight=1.0),
                  train_cfg=None,
@@ -71,7 +80,11 @@ class AnchorHead(BaseDenseHead, BBoxTestMixin):
         self.reg_decoded_bbox = reg_decoded_bbox
 
         self.bbox_coder = build_bbox_coder(bbox_coder)
-        self.loss_cls = build_loss(loss_cls)
+        self.use_vfl = use_vfl
+        if self.use_vfl:
+            self.loss_cls = build_loss(loss_cls_vfl)
+        else:
+            self.loss_cls = build_loss(loss_cls)
         self.loss_bbox = build_loss(loss_bbox)
         self.train_cfg = train_cfg
         self.test_cfg = test_cfg
@@ -400,8 +413,6 @@ class AnchorHead(BaseDenseHead, BBoxTestMixin):
         label_weights = label_weights.reshape(-1)
         cls_score = cls_score.permute(0, 2, 3,
                                       1).reshape(-1, self.cls_out_channels)
-        loss_cls = self.loss_cls(
-            cls_score, labels, label_weights, avg_factor=num_total_samples)
         # regression loss
         bbox_targets = bbox_targets.reshape(-1, 4)
         bbox_weights = bbox_weights.reshape(-1, 4)
@@ -409,6 +420,31 @@ class AnchorHead(BaseDenseHead, BBoxTestMixin):
         if self.reg_decoded_bbox:
             anchors = anchors.reshape(-1, 4)
             bbox_pred = self.bbox_coder.decode(anchors, bbox_pred)
+        if self.use_vfl:
+            anchors = anchors.reshape(-1, 4)
+            assert not self.reg_decoded_bbox
+            bbox_pred_decoded = self.bbox_coder.decode(anchors,
+                                                       bbox_pred.detach())
+            bbox_targets_decoded = self.bbox_coder.decode(
+                anchors, bbox_targets.detach())
+            ious = bbox_overlaps(
+                bbox_pred_decoded.detach(),
+                bbox_targets_decoded.detach(),
+                is_aligned=True)
+            pos_inds = ((labels >= 0)
+                        & (labels < self.num_classes)).nonzero().reshape(-1)
+            pos_labels = labels[pos_inds]
+            pos_ious = ious[pos_inds]
+            cls_iou_targets = torch.zeros_like(cls_score)
+            cls_iou_targets[pos_inds, pos_labels] = pos_ious
+            loss_cls = self.loss_cls(
+                cls_score,
+                cls_iou_targets,
+                label_weights.unsqueeze(1),
+                avg_factor=num_total_samples)
+        else:
+            loss_cls = self.loss_cls(
+                cls_score, labels, label_weights, avg_factor=num_total_samples)
         loss_bbox = self.loss_bbox(
             bbox_pred,
             bbox_targets,
