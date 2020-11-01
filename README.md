@@ -51,7 +51,7 @@ Once the installation is done, you can follow the steps below to run a quick dem
   and you should see an image with detections.
 
 ## Getting Started
-Please see [getting_started.md](docs/getting_started.md) for the basic usage of MMDetection.
+Please see [get_started.md](docs/get_started.md) for the basic usage of MMDetection.
 They also provide [colab tutorial](demo/MMDet_Tutorial.ipynb) for beginners.
 
 For trouble shooting, please refer to [trouble_shooting.md](docs/trouble_shooting.md)
