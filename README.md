@@ -23,6 +23,7 @@ In this work, we propose to learn IoU-aware classification scores (**IACS**) tha
 
 
 ## Updates
+- **2020.12.02** Update to MMDetection v2.7.0
 - **2020.10.29** VarifocalNet has been merged into [the official MMDetection repo](https://github.com/open-mmlab/mmdetection/tree/master/configs/vfnet). Many thanks to [@yhcao6](https://github.com/yhcao6), [@RyanXLi](https://github.com/RyanXLi) and [@hellock](https://github.com/hellock)!
 
 - **2020.10.29** This repo has been refactored so that users can pull the latest updates from the upstream official MMDetection repo. The previous one can be found in the `old` branch.
@@ -32,7 +33,7 @@ In this work, we propose to learn IoU-aware classification scores (**IACS**) tha
 ## Installation
 - This VarifocalNet implementation is based on [MMDetection](https://github.com/open-mmlab/mmdetection). Therefore the installation is the same as original MMDetection.
 
-- Please check [INSTALL.md](docs/install.md) for installation. Note that you should change the version of PyTorch and CUDA to yours when installing **mmcv** (version of 1.1.5 is recommended) in `step c`.
+- Please check [get_started.md](docs/get_started.md) for installation. Note that you should change the version of PyTorch and CUDA to yours when installing **mmcv** (version of 1.1.5 is recommended) in `step 3` and clone this repo instead of MMdetection in `step 4`.
 
 - If you run into problems with `pycocotools`, please install it by:
 
@@ -51,10 +52,10 @@ Once the installation is done, you can follow the steps below to run a quick dem
   and you should see an image with detections.
 
 ## Getting Started
-Please see [get_started.md](docs/get_started.md) for the basic usage of MMDetection.
+Please see [1_exist_data_model.md](docs/1_exist_data_model.md) for the basic usage of MMDetection.
 They also provide [colab tutorial](demo/MMDet_Tutorial.ipynb) for beginners.
 
-For trouble shooting, please refer to [trouble_shooting.md](docs/trouble_shooting.md)
+For trouble shooting, please refer to [faq.md](docs/faq.md)
 
 
 ## Results and Models
@@ -110,8 +111,6 @@ Assuming you have put the COCO dataset into `data/coco/` and have downloaded the
 - If you have less than 8 gpus available on your machine, please change 8 into the number of your gpus.
 - If you want to evaluate a different model, please change the config file (in [configs/vfnet](configs/vfnet)) and corresponding model weights file.
 - Test time augmentation is supported for the VarifocalNet, including multi-scale testing and flip testing. If you are interested, please refer to an example config file [vfnet_r50_fpn_1x_coco_tta.py](https://github.com/hyz-xmaster/VarifocalNet/blob/master/configs/vfnet/vfnet_r50_fpn_1x_coco_tta.py#L80-L83). More information about test time augmentation can be found in the official script [test_time_aug.py](https://github.com/hyz-xmaster/VarifocalNet/blob/master/mmdet/datasets/pipelines/test_time_aug.py).
-
-
 
 
 ## Training
