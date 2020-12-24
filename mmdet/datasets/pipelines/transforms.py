@@ -602,6 +602,7 @@ class RandomCrop(object):
             (crop_size[0], crop_size[1]). "absolute_range" uniformly samples
             crop_h in range [crop_size[0], min(h, crop_size[1])] and crop_w
             in range [crop_size[0], min(w, crop_size[1])]. Default "absolute".
+        crop_p (float): The probability of applying RandomCrop
         allow_negative_crop (bool, optional): Whether to allow a crop that does
             not contain any bbox area. Default False.
         bbox_clip_border (bool, optional): Whether clip the objects outside
@@ -621,6 +622,7 @@ class RandomCrop(object):
     def __init__(self,
                  crop_size,
                  crop_type='absolute',
+                 crop_p=0.5,
                  allow_negative_crop=False,
                  bbox_clip_border=True):
         if crop_type not in [
@@ -633,8 +635,10 @@ class RandomCrop(object):
                 crop_size[1], int)
         else:
             assert 0 < crop_size[0] <= 1 and 0 < crop_size[1] <= 1
+        assert 0 <= crop_p <= 1
         self.crop_size = crop_size
         self.crop_type = crop_type
+        self.crop_p = crop_p
         self.allow_negative_crop = allow_negative_crop
         self.bbox_clip_border = bbox_clip_border
         # The key correspondence from bboxes to labels and masks.
@@ -753,6 +757,11 @@ class RandomCrop(object):
             dict: Randomly cropped results, 'img_shape' key in result dict is
                 updated according to crop size.
         """
+        proceed = np.random.choice([True, False],
+                                   p=[self.crop_p, 1 - self.crop_p])
+        if not proceed:
+            return results
+
         image_size = results['img'].shape[:2]
         crop_size = self._get_crop_size(image_size)
         results = self._crop_data(results, crop_size, self.allow_negative_crop)
@@ -762,6 +771,7 @@ class RandomCrop(object):
         repr_str = self.__class__.__name__
         repr_str += f'(crop_size={self.crop_size}, '
         repr_str += f'crop_type={self.crop_type}, '
+        repr_str += f'crop_p={self.crop_p}, '
         repr_str += f'allow_negative_crop={self.allow_negative_crop}, '
         repr_str += f'bbox_clip_border={self.bbox_clip_border})'
         return repr_str
@@ -1072,8 +1082,8 @@ class MinIoURandomCrop(object):
                 new_w = random.uniform(self.min_crop_size * w, w)
                 new_h = random.uniform(self.min_crop_size * h, h)
 
-                # h / w in [0.5, 2]
-                if new_h / new_w < 0.5 or new_h / new_w > 2:
+                # h / w in [0.25, 4]
+                if new_h / new_w < 0.25 or new_h / new_w > 4:
                     continue
 
                 left = random.uniform(w - new_w)
@@ -1085,7 +1095,8 @@ class MinIoURandomCrop(object):
                 if patch[2] == patch[0] or patch[3] == patch[1]:
                     continue
                 overlaps = bbox_overlaps(
-                    patch.reshape(-1, 4), boxes.reshape(-1, 4)).reshape(-1)
+                    boxes.reshape(-1, 4), patch.reshape(-1, 4),
+                    'iof').reshape(-1)
                 if len(overlaps) > 0 and overlaps.min() < min_iou:
                     continue
 
@@ -1739,7 +1750,7 @@ class CutOut(object):
 
     Args:
         n_holes (int | tuple[int, int]): Number of regions to be dropped.
-            If it is given as a list, number of holes will be randomly
+            If it is given as a tuple, number of holes will be randomly
             selected from the closed interval [`n_holes[0]`, `n_holes[1]`].
         cutout_shape (tuple[int, int] | list[tuple[int, int]]): The candidate
             shape of dropped regions. It can be `tuple[int, int]` to use a
@@ -1752,13 +1763,15 @@ class CutOut(object):
             and `cutout_ratio` cannot be both given at the same time.
         fill_in (tuple[float, float, float] | tuple[int, int, int]): The value
             of pixel to fill in the dropped regions. Default: (0, 0, 0).
+        cutout_p (float): the probability of carrying out cutout
     """
 
     def __init__(self,
                  n_holes,
                  cutout_shape=None,
                  cutout_ratio=None,
-                 fill_in=(0, 0, 0)):
+                 fill_in=(0, 0, 0),
+                 cutout_p=0.5):
 
         assert (cutout_shape is None) ^ (cutout_ratio is None), \
             'Either cutout_shape or cutout_ratio should be specified.'
@@ -1770,6 +1783,7 @@ class CutOut(object):
             n_holes = (n_holes, n_holes)
         self.n_holes = n_holes
         self.fill_in = fill_in
+        self.cutout_p = cutout_p
         self.with_ratio = cutout_ratio is not None
         self.candidates = cutout_ratio if self.with_ratio else cutout_shape
         if not isinstance(self.candidates, list):
@@ -1777,6 +1791,11 @@ class CutOut(object):
 
     def __call__(self, results):
         """Call function to drop some regions of image."""
+        proceed = np.random.choice([True, False],
+                                   p=[self.cutout_p, 1 - self.cutout_p])
+        if not proceed:
+            return results
+
         h, w, c = results['img'].shape
         n_holes = np.random.randint(self.n_holes[0], self.n_holes[1] + 1)
         for _ in range(n_holes):
@@ -1800,5 +1819,121 @@ class CutOut(object):
         repr_str += f'(n_holes={self.n_holes}, '
         repr_str += (f'cutout_ratio={self.candidates}, ' if self.with_ratio
                      else f'cutout_shape={self.candidates}, ')
+        repr_str += f'fill_in={self.fill_in})'
+        return repr_str
+
+
+@PIPELINES.register_module()
+class CutOutInBBox(object):
+    """CutOutInBBox operation which only applies CutOut in ground-truth
+    bounding box.
+
+    Randomly drop some regions of image used in
+    `Cutout <https://arxiv.org/abs/1708.04552>`_.
+
+    Args:
+        n_holes (int | tuple[int, int]): Number of regions to be dropped.
+            If it is given as a tuple, number of holes will be randomly
+            selected from the closed interval [`n_holes[0]`, `n_holes[1]`].
+        cutout_shape (tuple[int, int] | list[tuple[int, int]]): The candidate
+            shape of dropped regions. It can be `tuple[int, int]` to use a
+            fixed cutout shape, or `list[tuple[int, int]]` to randomly choose
+            shape from the list.
+        cutout_ratio (tuple[float, float] | list[tuple[float, float]]): The
+            candidate ratio of shorter side of the bounding box. It can be
+            `tuple[float, float]` to use a fixed ratio or
+            `list[tuple[float, float]]` to randomly choose ratio from the list.
+            Please note that `cutout_shape` and `cutout_ratio` cannot be both
+            given at the same time.
+        aspect_ratio (float | list[float]): The aspect ratio of dropped
+            regions. It can be `tuple[int, int]` to use a fixed aspect ratio,
+            or `list[tuple[int, int]]` to randomly choose one from the list.
+        fill_in (tuple[float, float, float] | tuple[int, int, int]): The value
+            of pixel to fill in the dropped regions. Default: (0, 0, 0).
+        cutout_p (float): the probability of carrying out cutout for each box
+    """
+
+    def __init__(self,
+                 n_holes,
+                 cutout_shape=None,
+                 cutout_ratio=None,
+                 aspect_ratio=None,
+                 fill_in=(0, 0, 0),
+                 cutout_p=0.5):
+
+        assert (cutout_shape is None) ^ (cutout_ratio is None), \
+            'Either cutout_shape or cutout_ratio should be specified.'
+        assert (isinstance(cutout_shape, (list, tuple))
+                or isinstance(cutout_ratio, (list, tuple)))
+        if isinstance(n_holes, tuple):
+            assert len(n_holes) == 2 and 0 <= n_holes[0] < n_holes[1]
+        else:
+            n_holes = (n_holes, n_holes)
+        if isinstance(aspect_ratio, float):
+            aspect_ratio = [aspect_ratio]
+        self.n_holes = n_holes
+        self.fill_in = fill_in
+        self.cutout_p = cutout_p
+        self.aspect_ratio = aspect_ratio
+        self.with_ratio = cutout_ratio is not None
+        self.candidates = cutout_ratio if self.with_ratio else cutout_shape
+        if not isinstance(self.candidates, list):
+            self.candidates = [self.candidates]
+
+    def __call__(self, results):
+        """Call function to drop some regions of image."""
+        gt_bboxes = results['gt_bboxes']
+        n_gt_bboxes = gt_bboxes.shape[0]
+        if n_gt_bboxes == 0:
+            return results
+
+        for gt_bbox in gt_bboxes:
+            proceed = np.random.choice([True, False],
+                                       p=[self.cutout_p, 1 - self.cutout_p])
+            if not proceed:
+                continue
+            x1, y1, x2, y2 = gt_bbox
+            w = x2 - x1
+            h = y2 - y1
+            short_length = min(w, h)
+            n_holes = np.random.randint(self.n_holes[0], self.n_holes[1] + 1)
+            for _ in range(n_holes):
+                cut_x1 = np.random.randint(x1, x2 + 1)
+                cut_y1 = np.random.randint(y1, y2 + 1)
+                index = np.random.randint(0, len(self.candidates))
+                if not self.with_ratio:
+                    cutout_w, cutout_h = self.candidates[index]
+                else:
+                    ar_index = np.random.randint(0, len(self.aspect_ratio))
+                    if np.random.randint(0, 2) == 0:
+                        cutout_w = int(self.candidates[index][0] *
+                                       short_length *
+                                       self.aspect_ratio[ar_index])
+                        cutout_h = int(self.candidates[index][1] *
+                                       short_length)
+                    else:
+                        cutout_w = int(self.candidates[index][0] *
+                                       short_length)
+                        cutout_h = int(self.candidates[index][1] *
+                                       short_length *
+                                       self.aspect_ratio[ar_index])
+
+                cut_x2 = int(np.clip(cut_x1 + cutout_w, x1, x2))
+                cut_y2 = int(np.clip(cut_y1 + cutout_h, y1, y2))
+                results['img'][cut_y1:cut_y2, cut_x1:cut_x2, :] = self.fill_in
+
+        # import matplotlib.pyplot as plt
+        # import mmcv
+        # image = mmcv.bgr2rgb(results['img'])
+        # plt.imshow(image)
+        # plt.show()
+        return results
+
+    def __repr__(self):
+        repr_str = self.__class__.__name__
+        repr_str += f'(n_holes={self.n_holes}, '
+        repr_str += (f'cutout_ratio={self.candidates}, ' if self.with_ratio
+                     else f'cutout_shape={self.candidates}, ')
+        repr_str += f'(aspect_ratio={self.aspect_ratio}, '
         repr_str += f'fill_in={self.fill_in})'
         return repr_str

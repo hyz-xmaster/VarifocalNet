@@ -23,6 +23,7 @@ In this work, we propose to learn IoU-aware classification scores (**IACS**) tha
 
 
 ## Updates
+- **2020.12.24** We release a new [VFNetX](#-vfnetx) model that can achieve a single-model single-scale **55.1 AP** on COCO test-dev at 4.2 FPS.
 - **2020.12.02** Update to MMDetection v2.7.0
 - **2020.10.29** VarifocalNet has been merged into [the official MMDetection repo](https://github.com/open-mmlab/mmdetection/tree/master/configs/vfnet). Many thanks to [@yhcao6](https://github.com/yhcao6), [@RyanXLi](https://github.com/RyanXLi) and [@hellock](https://github.com/hellock)!
 
@@ -77,7 +78,6 @@ For your convenience, we provide the following trained models. These models are 
 | R2-101       | pytorch   | N       | Y             | 2x           | 13.0               | 49.2              | 49.3                   | [model](https://drive.google.com/file/d/1E4o1CxaWUQV7-HAyqbITw7JD8mOF7tNW/view?usp=sharing) &#124; [log](https://drive.google.com/file/d/1ESnWn7nXRJVcqQb5OjH3c6XM8Rqc4shI/view?usp=sharing)|
 | R2-101       | pytorch   | Y       | Y             | 2x           | 10.3               | 51.1              | 51.3                   | [model](https://drive.google.com/file/d/1kCiEqAA_VQlhbiNuZ3HWGhBD1JvVpK0c/view?usp=sharing) &#124; [log](https://drive.google.com/file/d/1BTwm-knCIT-kzkASjWNMfRWaAwI0ONmC/view?usp=sharing)|
 
-
 **Notes:**
 - The MS-train maximum scale range is 1333x[480:960] (`range` mode) and the inference scale keeps 1333x800.
 - The R2-101 backbone is [Res2Net-101](https://github.com/Res2Net/mmdetection).
@@ -99,6 +99,33 @@ We also provide the models of RetinaNet, FoveaBox and RepPoints trained with the
 - We use 4 P100 GPUs for the training of these models with a mini-batch size of 16 images (4 images per GPU), as we found 4x4 training yielded slightly better results compared to 8x2 training.
 - You can find corresponding config files in [configs/vfnet](configs/vfnet).
 - `use_vfl` flag in those config files controls whether to use the Varifocal Loss in training or not.
+
+
+### VFNetX
+| Backbone     | DCN     | MS <br> train | Training        | Inf <br> scale  | Inf time <br> (fps) | box AP <br> (val) | box AP <br> (test-dev) | &nbsp; &nbsp; Download  &nbsp; &nbsp;  |
+|:------------:|:---------:|:-----------:|:-------------:|:--------------:|:-------------------:|:-----------------:|:----------------------:|:--------------------------------------:|
+| R2-101       | Y       | Y             | 41e + SWA 18e |    1333x800    | 8.0                 | 53.4              | 53.7                   | [model]( https://drive.google.com/file/d/1I_NLVsGb-6p8kildkFYhIVSdpS1nr8Eh/view?usp=sharing) &#124; [config](configs/vfnet/vfnetx_r2_101_fpn_mdconv_c3-c5_mstrain_2x_coco.py)|
+| R2-101       | Y       | Y             | 41e + SWA 18e |    1800x1200   | 4.2                 | 54.5              | **55.1**                   |  |
+
+**Notes:**
+
+We implement some improvements to the original VFNet.  This version of VFNet is called VFNetX and these improvements include:
+
+- PAFPN. We replace the FPN with the [PAFPNX](mmdet/models/necks/pafpnx.py), and apply the DCN and group normalization (GN) in it.
+
+- More and Wider Conv Layers. We stack 4 convolution layers in the detection head, instead of 3 layers in the original VFNet, and increase the original 256 feature channels to 384 channels.
+
+- RandomCrop and Cutout. We employ the random crop and cutout as additional data augmentation methods.
+
+- Wider MSTrain Scale Range and Longer Training. We adopt a wider MSTrain scale range, from 750x500 to 2100x1400, and initially train the VFNet-X for 41 epochs.
+
+- SWA. We apply the technique of Stochastic Weight Averaging (SWA) in training the VFNetX (for another 18 epochs), which brings 1.2 AP gain. Please see our new work of [SWA Object Detection](https://github.com/hyz-xmaster/swa_object_detection) for more details.
+
+- Soft-NMS. We apply soft-NMS in inference.
+
+For more detailed information, please see the [config file](configs/vfnet/vfnetx_r2_101_fpn_mdconv_c3-c5_mstrain_2x_coco.py).
+
+
 
 
 ## Inference
