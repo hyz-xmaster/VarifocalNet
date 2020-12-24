@@ -23,7 +23,7 @@ In this work, we propose to learn IoU-aware classification scores (**IACS**) tha
 
 
 ## Updates
-- **2020.12.24** We release a new [VFNetX](#-vfnetx) model that can achieve a single-model single-scale **55.1 AP** on COCO test-dev at 4.2 FPS.
+- **2020.12.24** We release a new [VFNetX](#vfnetx) model that can achieve a single-model single-scale **55.1 AP** on COCO test-dev at 4.2 FPS.
 - **2020.12.02** Update to MMDetection v2.7.0
 - **2020.10.29** VarifocalNet has been merged into [the official MMDetection repo](https://github.com/open-mmlab/mmdetection/tree/master/configs/vfnet). Many thanks to [@yhcao6](https://github.com/yhcao6), [@RyanXLi](https://github.com/RyanXLi) and [@hellock](https://github.com/hellock)!
 
