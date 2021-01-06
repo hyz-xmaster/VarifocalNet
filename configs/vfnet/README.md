@@ -1,6 +1,7 @@
 # VarifocalNet: An IoU-aware Dense Object Detector
 
 ## Introduction
+
 **VarifocalNet (VFNet)** learns to predict the IoU-aware classification score which mixes the object presence confidence and localization accuracy together as the detection score. This learning is supervised by the proposed Varifocal Loss (VFL), based on a star-shaped bounding box feature representation (the features at nine yellow sampling points). Given the new representation, the object localization accuracy is further improved by refining the initially regressed bounding box.
 
 <div align="center">
@@ -10,7 +11,7 @@
 
 ## Citing VarifocalNet
 
-```
+```latex
 @article{zhang2020varifocalnet,
   title={VarifocalNet: An IoU-aware Dense Object Detector},
   author={Zhang, Haoyang and Wang, Ying and Dayoub, Feras and S{\"u}nderhauf, Niko},
@@ -37,13 +38,12 @@
 | R2-101       | pytorch   | N       | Y        | 2x      | 13.0          | 49.2         | 49.3              | [model](https://drive.google.com/file/d/1E4o1CxaWUQV7-HAyqbITw7JD8mOF7tNW/view?usp=sharing) &#124; [log](https://drive.google.com/file/d/1ESnWn7nXRJVcqQb5OjH3c6XM8Rqc4shI/view?usp=sharing)|
 | R2-101       | pytorch   | Y       | Y        | 2x      | 10.3          | 51.1         | 51.3              | [model](https://drive.google.com/file/d/1kCiEqAA_VQlhbiNuZ3HWGhBD1JvVpK0c/view?usp=sharing) &#124; [log](https://drive.google.com/file/d/1BTwm-knCIT-kzkASjWNMfRWaAwI0ONmC/view?usp=sharing)|
 
-
 **Notes:**
+
 - The MS-train scale range is 1333x[480:960] (`range` mode) and the inference scale keeps 1333x800.
 - The R2-101 backbone is [Res2Net-101](https://github.com/Res2Net/mmdetection).
 - DCN means using `DCNv2` in both backbone and head.
 - The inference speed is tested with a Nvidia V100 GPU on HPC ([log file](https://drive.google.com/file/d/1dc9296G6JevouLixj-g81VgccEt54ceP/view?usp=sharing)).
-
 
 We also provide the models of RetinaNet, FoveaBox and RepPoints trained with the Focal Loss (FL) and our Varifocal Loss (VFL).
 
@@ -57,5 +57,6 @@ We also provide the models of RetinaNet, FoveaBox and RepPoints trained with the
 | RepPoints + VFL | R-50     | N        | 1x      | 39.7         | [model](https://drive.google.com/file/d/17-SPlxq_qmfEPiEBwDlm0aV81Sh3AF1W/view?usp=sharing) &#124; [log](https://drive.google.com/file/d/1aC5wB3P05u_sCbnoSZUuNSnZVMJrMoiC/view?usp=sharing) |
 
 **Notes:**
+
 - We use 4 P100 GPUs for the training of these models with a mini-batch size of 16 images (4 images per GPU), as we found 4x4 training yielded slightly better results compared to 8x2 training.
 - `use_vfl` flag in those config files vfl_xxx controls whether to use the Varifocal Loss in training or not.
