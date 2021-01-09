@@ -136,13 +136,12 @@ lr_config = dict(
 total_epochs = 41
 
 # swa learning policy
-# lr_config = dict(
-#     _delete_=True,
-#     policy='cyclic',
-#     target_ratio=(1, 0.01),
-#     cyclic_times=18,
-#     step_ratio_up=0.0)
-# total_epochs = 18
+swa_lr_config = dict(
+    policy='cyclic',
+    target_ratio=(1, 0.01),
+    cyclic_times=18,
+    step_ratio_up=0.0)
+swa_total_epochs = 18
 
 # runtime
 load_from = None

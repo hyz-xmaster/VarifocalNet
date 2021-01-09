@@ -24,6 +24,7 @@ In this work, we propose to learn IoU-aware classification scores (**IACS**) tha
 
 ## Updates
 
+- **2021.01.09** Add SWA training
 - **2021.01.07** Update to MMDetection v2.8.0
 - **2020.12.24** We release a new [VFNetX](#vfnetx) model that can achieve a single-model single-scale **55.1 AP** on COCO test-dev at 4.2 FPS.
 - **2020.12.02** Update to MMDetection v2.7.0

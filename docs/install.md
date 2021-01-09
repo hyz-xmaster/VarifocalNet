@@ -82,8 +82,7 @@ pip install mmcv-full
 | 2.1.0               | mmcv>=0.5.9, <=0.6.1|
 | 2.0.0               | mmcv>=0.5.1, <=0.5.8|
 
-2. You need to run `pip uninstall mmcv` first if you have mmcv installed.
-If mmcv and mmcv-full are both installed, there will be `ModuleNotFoundError`.
+2. You need to run `pip uninstall mmcv` first if you have mmcv installed. If mmcv and mmcv-full are both installed, there will be `ModuleNotFoundError`.
 
 d. Clone this repository.
 
@@ -109,8 +108,7 @@ CC=clang CXX=clang++ CFLAGS='-stdlib=libc++' pip install -e .
 
 Note:
 
-1. The git commit id will be written to the version number with step d, e.g. 0.6.0+2e7045c. The version will also be saved in trained models.
-It is recommended that you run step d each time you pull some updates from github. If C++/CUDA codes are modified, then this step is compulsory.
+1. The git commit id will be written to the version number with step d, e.g. 0.6.0+2e7045c. The version will also be saved in trained models. It is recommended that you run step d each time you pull some updates from github. If C++/CUDA codes are modified, then this step is compulsory.
 
     > Important: Be sure to remove the `./build` folder if you reinstall mmdet with a different CUDA/PyTorch version.
 
@@ -122,8 +120,7 @@ It is recommended that you run step d each time you pull some updates from githu
 
 2. Following the above instructions, mmdetection is installed on `dev` mode, any local modifications made to the code will take effect without the need to reinstall it (unless you submit some commits and want to update the version number).
 
-3. If you would like to use `opencv-python-headless` instead of `opencv-python`,
-you can install it before installing MMCV.
+3. If you would like to use `opencv-python-headless` instead of `opencv-python`, you can install it before installing MMCV.
 
 4. Some dependencies are optional. Simply running `pip install -v -e .` will only install the minimum runtime requirements. To use optional dependencies like `albumentations` and `imagecorruptions` either install them manually with `pip install -r requirements/optional.txt` or specify desired extras when calling `pip` (e.g. `pip install -v -e .[optional]`). Valid keys for the extras field are: `all`, `tests`, `build`, and `optional`.
 
