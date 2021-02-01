@@ -47,15 +47,14 @@ model = dict(
             gamma=2.0,
             iou_weighted=True,
             loss_weight=1.0),
-        loss_bbox=dict(type='SmoothL1Loss', beta=0.11, loss_weight=1.0)))
-
-# training and testing settings
-train_cfg = dict()
-test_cfg = dict(
-    nms_pre=1000,
-    score_thr=0.05,
-    nms=dict(type='nms', iou_threshold=0.5),
-    max_per_img=100)
+        loss_bbox=dict(type='SmoothL1Loss', beta=0.11, loss_weight=1.0)),
+    # training and testing settings
+    train_cfg=dict(),
+    test_cfg=dict(
+        nms_pre=1000,
+        score_thr=0.05,
+        nms=dict(type='nms', iou_threshold=0.5),
+        max_per_img=100))
 
 data = dict(samples_per_gpu=4, workers_per_gpu=4)
 
