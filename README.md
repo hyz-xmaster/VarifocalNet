@@ -57,12 +57,12 @@ Once the installation is done, you can follow the steps below to run a quick dem
 
   and you should see an image with detections.
 
-## Getting Starte
+## Usage of MMDetection
 
-Please see [1_exist_data_model.md](docs/1_exist_data_model.md) for the basic usage of MMDetection.
+Please see [exist_data_model.md](docs/1_exist_data_model.md) for the basic usage of MMDetection.
 They also provide [colab tutorial](demo/MMDet_Tutorial.ipynb) for beginners.
 
-For trouble shooting, please refer to [faq.md](docs/faq.md)
+For troubleshooting, please refer to [faq.md](docs/faq.md)
 
 ## Results and Models
 
