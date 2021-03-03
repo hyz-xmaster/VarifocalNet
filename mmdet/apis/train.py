@@ -1,11 +1,13 @@
 import os
 import random
+import warnings
 
 import numpy as np
 import torch
 from mmcv.parallel import MMDataParallel, MMDistributedDataParallel
 from mmcv.runner import (HOOKS, DistSamplerSeedHook, EpochBasedRunner,
-                         Fp16OptimizerHook, OptimizerHook, build_optimizer)
+                         Fp16OptimizerHook, OptimizerHook, build_optimizer,
+                         build_runner)
 from mmcv.utils import build_from_cfg
 
 from mmdet.core import DistEvalHook, EvalHook
@@ -88,12 +90,28 @@ def train_detector(model,
     if not cfg.get('only_swa_training', False):
         # build runner
         optimizer = build_optimizer(model, cfg.optimizer)
-        runner = EpochBasedRunner(
-            model,
-            optimizer=optimizer,
-            work_dir=cfg.work_dir,
-            logger=logger,
-            meta=meta)
+
+        if 'runner' not in cfg:
+            cfg.runner = {
+                'type': 'EpochBasedRunner',
+                'max_epochs': cfg.total_epochs
+            }
+            warnings.warn(
+                'config is now expected to have a `runner` section, '
+                'please set `runner` in your config.', UserWarning)
+        else:
+            if 'total_epochs' in cfg:
+                assert cfg.total_epochs == cfg.runner.max_epochs
+
+        runner = build_runner(
+            cfg.runner,
+            default_args=dict(
+                model=model,
+                optimizer=optimizer,
+                work_dir=cfg.work_dir,
+                logger=logger,
+                meta=meta))
+
         # an ugly workaround to make .log and .log.json filenames the same
         runner.timestamp = timestamp
 
@@ -112,7 +130,8 @@ def train_detector(model,
                                        cfg.checkpoint_config, cfg.log_config,
                                        cfg.get('momentum_config', None))
         if distributed:
-            runner.register_hook(DistSamplerSeedHook())
+            if isinstance(runner, EpochBasedRunner):
+                runner.register_hook(DistSamplerSeedHook())
 
         # register eval hooks
         if validate:
@@ -130,6 +149,7 @@ def train_detector(model,
                 dist=distributed,
                 shuffle=False)
             eval_cfg = cfg.get('evaluation', {})
+            eval_cfg['by_epoch'] = cfg.runner['type'] != 'IterBasedRunner'
             eval_hook = DistEvalHook if distributed else EvalHook
             runner.register_hook(
                 eval_hook(val_dataloader, save_best='bbox_mAP', **eval_cfg))
@@ -152,7 +172,7 @@ def train_detector(model,
             runner.resume(cfg.resume_from)
         elif cfg.load_from:
             runner.load_checkpoint(cfg.load_from)
-        runner.run(data_loaders, cfg.workflow, cfg.total_epochs)
+        runner.run(data_loaders, cfg.workflow)
     else:
         # if just swa training is performed, there should be a starting model
         assert cfg.swa_resume_from is not None or cfg.swa_load_from is not None
@@ -164,12 +184,15 @@ def train_detector(model,
     from mmdet.core import SWAHook
     logger.info('Start SWA training')
     swa_optimizer = build_optimizer(model, cfg.swa_optimizer)
-    swa_runner = EpochBasedRunner(
-        model,
-        optimizer=swa_optimizer,
-        work_dir=cfg.work_dir,
-        logger=logger,
-        meta=meta)
+    swa_runner = build_runner(
+        cfg.swa_runner,
+        default_args=dict(
+            model=model,
+            optimizer=swa_optimizer,
+            work_dir=cfg.work_dir,
+            logger=logger,
+            meta=meta))
+
     # an ugly workaround to make .log and .log.json filenames the same
     swa_runner.timestamp = timestamp
 
@@ -189,7 +212,8 @@ def train_detector(model,
                                        cfg.log_config,
                                        cfg.get('momentum_config', None))
     if distributed:
-        swa_runner.register_hook(DistSamplerSeedHook())
+        if isinstance(swa_runner, EpochBasedRunner):
+            swa_runner.register_hook(DistSamplerSeedHook())
 
     # register eval hooks
     if validate:
@@ -207,6 +231,7 @@ def train_detector(model,
             dist=distributed,
             shuffle=False)
         eval_cfg = cfg.get('evaluation', {})
+        eval_cfg['by_epoch'] = cfg.runner['type'] != 'IterBasedRunner'
         eval_hook = DistEvalHook if distributed else EvalHook
         swa_runner.register_hook(eval_hook(val_dataloader, **eval_cfg))
         swa_eval = True
@@ -217,7 +242,10 @@ def train_detector(model,
         swa_eval_hook = None
 
     # register swa hook
-    swa_hook = SWAHook(swa_eval=swa_eval, eval_hook=swa_eval_hook)
+    swa_hook = SWAHook(
+        swa_eval=swa_eval,
+        eval_hook=swa_eval_hook,
+        swa_interval=cfg.swa_interval)
     swa_runner.register_hook(swa_hook, priority='LOW')
 
     # register user-defined hooks
@@ -253,4 +281,4 @@ def train_detector(model,
             cfg.swa_load_from = best_model_path
         swa_runner.load_checkpoint(cfg.swa_load_from)
 
-    swa_runner.run(data_loaders, cfg.workflow, cfg.swa_total_epochs)
+    swa_runner.run(data_loaders, cfg.workflow)

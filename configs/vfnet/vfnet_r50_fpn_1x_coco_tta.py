@@ -108,7 +108,7 @@ lr_config = dict(
     warmup_iters=500,
     warmup_ratio=0.1,
     step=[8, 11])
-total_epochs = 12
+runner = dict(type='EpochBasedRunner', max_epochs=12)
 
 # runtime
 load_from = None

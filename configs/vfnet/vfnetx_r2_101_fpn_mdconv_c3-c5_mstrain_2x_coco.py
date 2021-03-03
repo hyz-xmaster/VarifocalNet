@@ -132,7 +132,7 @@ lr_config = dict(
     warmup_iters=500,
     warmup_ratio=0.1,
     step=[36, 40])
-total_epochs = 41
+runner = dict(type='EpochBasedRunner', max_epochs=41)
 
 # swa learning policy
 swa_lr_config = dict(
@@ -140,7 +140,7 @@ swa_lr_config = dict(
     target_ratio=(1, 0.01),
     cyclic_times=18,
     step_ratio_up=0.0)
-swa_total_epochs = 18
+swa_runner = dict(type='EpochBasedRunner', max_epochs=18)
 
 # runtime
 load_from = None

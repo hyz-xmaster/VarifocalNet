@@ -24,10 +24,11 @@ In this work, we propose to learn IoU-aware classification scores (**IACS**) tha
 
 ## Updates
 
-- **2021.01.09** Add SWA training
-- **2021.01.07** Update to MMDetection v2.8.0
+- **2021.03.03** Update to MMDetection v2.10.0.
+- **2021.01.09** Add SWA training.
+- **2021.01.07** Update to MMDetection v2.8.0.
 - **2020.12.24** We release a new [VFNetX](#vfnetx) model that can achieve a single-model single-scale **55.1 AP** on COCO test-dev at 4.2 FPS.
-- **2020.12.02** Update to MMDetection v2.7.0
+- **2020.12.02** Update to MMDetection v2.7.0.
 - **2020.10.29** VarifocalNet has been merged into [the official MMDetection repo](https://github.com/open-mmlab/mmdetection/tree/master/configs/vfnet). Many thanks to [@yhcao6](https://github.com/yhcao6), [@RyanXLi](https://github.com/RyanXLi) and [@hellock](https://github.com/hellock)!
 - **2020.10.29** This repo has been refactored so that users can pull the latest updates from the upstream official MMDetection repo. The previous one can be found in the `old` branch.
 
@@ -127,7 +128,7 @@ We implement some improvements to the original VFNet.  This version of VFNet is 
 
 - Wider MSTrain Scale Range and Longer Training. We adopt a wider MSTrain scale range, from 750x500 to 2100x1400, and initially train the VFNet-X for 41 epochs.
 
-- SWA. We apply the technique of Stochastic Weight Averaging (SWA) in training the VFNetX (for another 18 epochs), which brings 1.2 AP gain. Please see our new work of [SWA Object Detection](https://github.com/hyz-xmaster/swa_object_detection) for more details.
+- SWA. We apply the technique of Stochastic Weight Averaging (SWA) in training the VFNetX (for another 18 epochs), which brings 1.2 AP gain. Please see our work of [SWA Object Detection](https://github.com/hyz-xmaster/swa_object_detection) for more details.
 
 - Soft-NMS. We apply soft-NMS in inference.
 

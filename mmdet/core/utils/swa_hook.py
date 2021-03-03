@@ -12,18 +12,17 @@ from mmdet.core import DistEvalHook, EvalHook
 @HOOKS.register_module()
 class SWAHook(Hook):
     r"""SWA Object Detection Hook.
-
         This hook works together with SWA training config files to train
         SWA object detectors <https://arxiv.org/abs/2012.12645>.
-
         Args:
             swa_eval (bool): Whether to evaluate the swa model.
                 Defaults to True.
             eval_hook (Hook): Hook class that contains evaluation functions.
                 Defaults to None.
+            swa_interval (int): The epoch interval to perform swa
     """
 
-    def __init__(self, swa_eval=True, eval_hook=None):
+    def __init__(self, swa_eval=True, eval_hook=None, swa_interval=1):
         if not isinstance(swa_eval, bool):
             raise TypeError('swa_eval must be a bool, but got'
                             f'{type(swa_eval)}')
@@ -35,6 +34,7 @@ class SWAHook(Hook):
                                 f'{type(eval_hook)}')
         self.swa_eval = swa_eval
         self.eval_hook = eval_hook
+        self.swa_interval = swa_interval
 
     def before_run(self, runner):
         """Construct the averaged model which will keep track of the running
@@ -42,31 +42,42 @@ class SWAHook(Hook):
         model = runner.model
         self.model = AveragedModel(model)
 
-        self.log_buffer = LogBuffer()
         self.meta = runner.meta
         if self.meta is None:
             self.meta = dict()
             self.meta.setdefault('hook_msgs', dict())
+        if isinstance(self.meta, dict) and 'hook_msgs' not in self.meta:
+            self.meta.setdefault('hook_msgs', dict())
+        self.log_buffer = LogBuffer()
 
     def after_train_epoch(self, runner):
         """Update the parameters of the averaged model, save and evaluate the
         updated averaged model."""
         model = runner.model
+        # Whether to perform swa
+        if (runner.epoch + 1) % self.swa_interval == 0:
+            swa_flag = True
+        else:
+            swa_flag = False
         # update the parameters of the averaged model
-        self.model.update_parameters(model)
+        if swa_flag:
+            self.model.update_parameters(model)
 
-        # save the swa model
-        runner.logger.info(
-            f'Saving swa model at swa-training {runner.epoch + 1} epoch')
-        filename = 'swa_model_{}.pth'.format(runner.epoch + 1)
-        filepath = osp.join(runner.work_dir, filename)
-        optimizer = runner.optimizer
-        self.meta['hook_msgs']['last_ckpt'] = filepath
-        save_checkpoint(
-            self.model.module, filepath, optimizer=optimizer, meta=self.meta)
+            # save the swa model
+            runner.logger.info(
+                f'Saving swa model at swa-training {runner.epoch + 1} epoch')
+            filename = 'swa_model_{}.pth'.format(runner.epoch + 1)
+            filepath = osp.join(runner.work_dir, filename)
+            optimizer = runner.optimizer
+            self.meta['hook_msgs']['last_ckpt'] = filepath
+            save_checkpoint(
+                self.model.module,
+                filepath,
+                optimizer=optimizer,
+                meta=self.meta)
 
         # evaluate the swa model
-        if self.swa_eval:
+        if self.swa_eval and swa_flag:
             self.work_dir = runner.work_dir
             self.rank = runner.rank
             self.epoch = runner.epoch
