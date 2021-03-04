@@ -1,6 +1,8 @@
 from .anchor_free_head import AnchorFreeHead
 from .anchor_head import AnchorHead
 from .atss_head import ATSSHead
+from .atss_raw_head import ATSSRawHead
+from .atss_vgfl_head import ATSSVGFLHead
 from .cascade_rpn_head import CascadeRPNHead, StageCascadeRPNHead
 from .centripetal_head import CentripetalHead
 from .corner_head import CornerHead
@@ -25,6 +27,7 @@ from .sabl_retina_head import SABLRetinaHead
 from .ssd_head import SSDHead
 from .transformer_head import TransformerHead
 from .vfnet_head import VFNetHead
+from .vfnet_raw_head import VFNetRawHead
 from .yolact_head import YOLACTHead, YOLACTProtonet, YOLACTSegmHead
 from .yolo_head import YOLOV3Head
 
@@ -36,5 +39,6 @@ __all__ = [
     'PISARetinaHead', 'PISASSDHead', 'GFLHead', 'CornerHead', 'YOLACTHead',
     'YOLACTSegmHead', 'YOLACTProtonet', 'YOLOV3Head', 'PAAHead',
     'SABLRetinaHead', 'CentripetalHead', 'VFNetHead', 'TransformerHead',
-    'StageCascadeRPNHead', 'CascadeRPNHead', 'EmbeddingRPNHead'
+    'StageCascadeRPNHead', 'CascadeRPNHead', 'EmbeddingRPNHead', 'ATSSRawHead',
+    'ATSSVGFLHead', 'VFNetRawHead'
 ]

@@ -2,7 +2,7 @@
 
 ## Introduction
 
-**VarifocalNet (VFNet)** learns to predict the IoU-aware classification score which mixes the object presence confidence and localization accuracy together as the detection score. This learning is supervised by the proposed Varifocal Loss (VFL), based on a star-shaped bounding box feature representation (the features at nine yellow sampling points). Given the new representation, the object localization accuracy is further improved by refining the initially regressed bounding box.
+Accurately ranking the vast number of candidate detections is crucial for dense object detectors to achieve high performance. In this work, we propose to learn IoU-aware classification scores (**IACS**) that simultaneously represent the object presence confidence and localization accuracy, to produce a more accurate ranking of detections in dense object detectors. In particular, we design a new loss function, named **Varifocal Loss (VFL)**, for training a dense object detector to predict the IACS, and a new efficient star-shaped bounding box feature representation (the features at nine yellow sampling points) for estimating the IACS and refining coarse bounding boxes. Combining these two new components and a bounding box refinement branch, we build a new IoU-aware dense object detector based on the FCOS+ATSS architecture, what we call **VarifocalNet** or **VFNet** for short. Extensive experiments on MS COCO benchmark show that our VFNet consistently surpasses the strong baseline by ~2.0 AP with different backbones. Our best model VFNet-X-1200 with Res2Net-101-DCN reaches a single-model single-scale AP of **55.1** on COCO `test-dev`, achieving the state-of-the-art performance among various object detectors.
 
 <div align="center">
   <img src="VFNet.png" width="600px" />
@@ -12,11 +12,11 @@
 ## Citing VarifocalNet
 
 ```latex
-@article{zhang2020varifocalnet,
+@inproceedings{zhang2020varifocalnet,
   title={VarifocalNet: An IoU-aware Dense Object Detector},
   author={Zhang, Haoyang and Wang, Ying and Dayoub, Feras and S{\"u}nderhauf, Niko},
-  journal={arXiv preprint arXiv:2008.13367},
-  year={2020}
+  booktitle={CVPR},
+  year={2021}
 }
 ```
 
@@ -45,7 +45,7 @@
 - DCN means using `DCNv2` in both backbone and head.
 - The inference speed is tested with a Nvidia V100 GPU on HPC ([log file](https://drive.google.com/file/d/1dc9296G6JevouLixj-g81VgccEt54ceP/view?usp=sharing)).
 
-We also provide the models of RetinaNet, FoveaBox and RepPoints trained with the Focal Loss (FL) and our Varifocal Loss (VFL).
+We also provide the models of RetinaNet, FoveaBox, RepPoints and ATSS trained with the Focal Loss (FL) and our Varifocal Loss (VFL).
 
 | Method          | Backbone | MS train | Lr schd | box AP (val) | Download |
 |:---------------:|:--------:|:--------:|:-------:|:------------:|:--------:|
@@ -55,8 +55,11 @@ We also provide the models of RetinaNet, FoveaBox and RepPoints trained with the
 | FoveaBox + VFL  | R-50     | N        | 1x      | 37.2         | [model](https://drive.google.com/file/d/1mS9guZmgPeZj-Sgo0HLE5B881pdT2PyJ/view?usp=sharing) &#124; [log](https://drive.google.com/file/d/1dcAUFHQTJJ6UWr0fcLRju87cIagUQtfM/view?usp=sharing) |
 | RepPoints + FL  | R-50     | N        | 1x      | 38.3         | [model](https://drive.google.com/file/d/1qpH5gGmI_x5EkT5gc0uwK3gTjPG6vzp2/view?usp=sharing) &#124; [log](https://drive.google.com/file/d/1isphNH_21qfgL6ZFtFl-94MZyins8yYX/view?usp=sharing) |
 | RepPoints + VFL | R-50     | N        | 1x      | 39.7         | [model](https://drive.google.com/file/d/17-SPlxq_qmfEPiEBwDlm0aV81Sh3AF1W/view?usp=sharing) &#124; [log](https://drive.google.com/file/d/1aC5wB3P05u_sCbnoSZUuNSnZVMJrMoiC/view?usp=sharing) |
+| ATSS + FL       | R-50     | N        | 1x      | 39.3         | [model](https://drive.google.com/file/d/1Eik_WZ1GtABTh3QxvBhFL-L93NTB6c-c/view?usp=sharing) &#124; [log](https://drive.google.com/file/d/1bFZW11QWH8f7T8V91y54ipHGDDVpbobO/view?usp=sharing)      |
+| ATSS + VFL      | R-50     | N        | 1x      | 40.2         | [model](https://drive.google.com/file/d/1Uqkr4WMYhT22viFCpF7iUdbpvVvlQYLV/view?usp=sharing) &#124; [log](https://drive.google.com/file/d/1p1-viBwdHyaCkIjwqf_UTuOa2bFlGc_4/view?usp=sharing) |
 
 **Notes:**
 
-- We use 4 P100 GPUs for the training of these models with a mini-batch size of 16 images (4 images per GPU), as we found 4x4 training yielded slightly better results compared to 8x2 training.
-- `use_vfl` flag in those config files vfl_xxx controls whether to use the Varifocal Loss in training or not.
+- We use 4 P100 GPUs for the training of these models (except ATSS, 8x2) with a mini-batch size of 16 images (4 images per GPU), as we found 4x4 training yielded slightly better results compared to 8x2 training.
+- You can find corresponding config files in [configs/vfnet](configs/vfnet).
+- `use_vfl` flag in those config files controls whether to use the Varifocal Loss in training or not.
